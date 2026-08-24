@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Windows.Input;
-using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Net;
 using SharpConfig;
 using WireGuardAPI;
@@ -54,13 +53,6 @@ namespace WireGuardServerForWindows.Models
                 }
             }
 
-            // Check whether the registry got updated correctly.
-            if (!GetScopeAddressRegistryValue().Equals(serverConfiguration.IpAddress))
-            {
-                ErrorMessage = Resources.ScopeAddressRegistryIncorrect;
-                return false;
-            }
-
             // If we get here, everything passed.
             return true;
         });
@@ -102,14 +94,13 @@ namespace WireGuardServerForWindows.Models
         public override void Configure()
         {
             var serverConfiguration = new ServerConfiguration().Load<ServerConfiguration>(Configuration.LoadFromFile(ServerDataPath));
-            string originalServerIp = serverConfiguration.AddressProperty.Value;
-            
             ServerConfigurationEditorWindow serverConfigurationEditor = new ServerConfigurationEditorWindow {DataContext = serverConfiguration};
 
             Mouse.OverrideCursor = Cursors.Wait;
             if (serverConfigurationEditor.ShowDialog() == true)
             {
                 Mouse.OverrideCursor = Cursors.Wait;
+                WarningMessage = null;
 
                 // Save to Data
                 SaveData(serverConfiguration);
@@ -121,20 +112,14 @@ namespace WireGuardServerForWindows.Models
                 var clientConfigurationsPrerequisite = new ClientConfigurationsPrerequisite();
                 clientConfigurationsPrerequisite.Update();
 
-                // Update Internet Sharing to use new server IP only if
-                // - the new value passes validation
-                // - the new value is not already in the registry
-                if (string.IsNullOrEmpty(serverConfiguration.AddressProperty.Validation?.Validate?.Invoke(serverConfiguration.AddressProperty))
-                    && !GetScopeAddressRegistryValue().Equals(serverConfiguration.IpAddress))
+                // Update WinNAT if the WireGuard network range changed.
+                if (string.IsNullOrEmpty(serverConfiguration.AddressProperty.Validation?.Validate?.Invoke(serverConfiguration.AddressProperty)))
                 {
-                    SetScopeAddressRegistryValue(serverConfiguration.IpAddress);
-
-                    // If Internet Sharing is already enabled, and we just changed the server's network range, we should disable and re-enable ICS
-                    var ics = new InternetSharingPrerequisite();
-                    if (ics.Fulfilled)
+                    var nat = new InternetSharingPrerequisite();
+                    if (WindowsNatManager.Exists(out _))
                     {
-                        ics.Configure();
-                        ics.Resolve();
+                        nat.Configure();
+                        nat.Resolve();
                     }
                 }
 
@@ -143,6 +128,8 @@ namespace WireGuardServerForWindows.Models
                 {
                     // Sync conf to tunnel
                     new WireGuardExe().ExecuteCommand(new SyncConfigurationCommand(WireGuardServerInterfaceName, ServerWGPath));
+                    ApplyConfiguredMtu(serverConfiguration);
+                    ApplyNetworkSecurity(serverConfiguration);
                 }
 
                 Mouse.OverrideCursor = null;
@@ -155,7 +142,11 @@ namespace WireGuardServerForWindows.Models
         {
             if (File.Exists(ServerDataPath))
             {
-                SaveWG(new ServerConfiguration().Load<ServerConfiguration>(Configuration.LoadFromFile(ServerDataPath)));
+                WarningMessage = null;
+                var serverConfiguration = new ServerConfiguration().Load<ServerConfiguration>(Configuration.LoadFromFile(ServerDataPath));
+                SaveWG(serverConfiguration);
+                ApplyConfiguredMtu(serverConfiguration);
+                ApplyNetworkSecurity(serverConfiguration);
             }
 
             Refresh();
@@ -164,6 +155,28 @@ namespace WireGuardServerForWindows.Models
         #endregion
 
         #region Private methods
+
+        private void ApplyConfiguredMtu(ServerConfiguration serverConfiguration)
+        {
+            if (NetworkInterfaceMtuManager.TryApply(WireGuardServerInterfaceName, serverConfiguration.MtuProperty.Value, out var error))
+            {
+                return;
+            }
+
+            WarningMessage = $"The configured MTU could not be applied to the running tunnel: {error}";
+        }
+
+        private void ApplyNetworkSecurity(ServerConfiguration serverConfiguration)
+        {
+            if (NetworkSecurityManager.TryApply(serverConfiguration, WireGuardServerInterfaceName, out var error))
+            {
+                return;
+            }
+
+            WarningMessage = string.IsNullOrEmpty(WarningMessage)
+                ? $"Firewall protection could not be applied: {error}"
+                : $"{WarningMessage} Firewall protection could not be applied: {error}";
+        }
 
         private void SaveData(ServerConfiguration serverConfiguration)
         {
@@ -230,20 +243,5 @@ namespace WireGuardServerForWindows.Models
 
         #endregion
 
-        #region Private static methods
-
-        private static void SetScopeAddressRegistryValue(string value)
-        {
-            var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters", writable: true);
-            key?.SetValue("ScopeAddress", value);
-        }
-
-        private static string GetScopeAddressRegistryValue()
-        {
-            var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters", writable: false);
-            return key?.GetValue("ScopeAddress")?.ToString();
-        }
-
-        #endregion
     }
 }

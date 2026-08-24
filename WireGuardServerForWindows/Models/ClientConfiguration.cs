@@ -47,10 +47,9 @@ namespace WireGuardServerForWindows.Models
                 Action = (conf, prop) =>
                 {
                     IPNetwork serverNetwork = IPNetwork.Parse(serverConfiguration.AddressProperty.Value);
-                    var possibleAddresses = serverNetwork.ListIPAddress().Skip(2).SkipLast(1).ToList(); // Skip reserved .0 and .1 and .255.
-
                     // If the current address is already in range, we're done
-                    if (possibleAddresses.Select(a => a.ToString()).Contains(prop.Value))
+                    if (IPAddress.TryParse(prop.Value, out var currentAddress)
+                        && NetworkAddressUtilities.IsUsableClientAddress(serverNetwork, currentAddress))
                     {
                         return;
                     }
@@ -60,7 +59,8 @@ namespace WireGuardServerForWindows.Models
                     var existingAddresses = parentList.List.Select(c => c.AddressProperty.Value);
 
                     // Find the first address that isn't used by another client
-                    prop.Value = possibleAddresses.FirstOrDefault(a => existingAddresses.Contains(a.ToString()) == false)?.ToString();
+                    prop.Value = NetworkAddressUtilities.EnumerateUsableClientAddresses(serverNetwork)
+                        .FirstOrDefault(a => existingAddresses.Contains(a.ToString()) == false)?.ToString();
 
                     Mouse.OverrideCursor = null;
                 }
@@ -77,25 +77,21 @@ namespace WireGuardServerForWindows.Models
                     if (IPNetwork.TryParse(obj.Value, out var network))
                     {
                         // At this point, we know it's a valid network. Let's see how many addresses are in range
-                        if (network.Usable > 1)
+                        bool isSingleAddress = IPAddress.TryParse(obj.Value, out _)
+                            || network.PrefixLength == (network.BaseAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? 32 : 128);
+
+                        if (isSingleAddress == false)
                         {
-                            // It's CIDR, but it defines more than one address.
-                            // However, IPNetwork has a quirk that parses single addresses (without mask) as a range.
-                            // So now let's see if it's a single address
-                            if (IPAddress.TryParse(obj.Value, out _) == false)
-                            {
-                                // If we get here, it passed CIDR parsing, but it defined more than one address (i.e., had a mask). It's bad!
-                                result = Resources.ClientAddressValidationError;
-                            }
-                            // Else, it's a single address as parsed by IPAddress, so we're good!
+                            result = Resources.ClientAddressValidationError;
                         }
-                        // Else
-                        // It's in CIDR notation and only defines a single address (/32) so we're good!
                     }
                     else
                     {
-                        // Not even IPNetwork could parse it, so it's really bad!
-                        result = Resources.ClientAddressValidationError;
+                        // A single IP address is also valid for a client address.
+                        if (IPAddress.TryParse(obj.Value, out _) == false)
+                        {
+                            result = Resources.ClientAddressValidationError;
+                        }
                     }
 
                     return result;

@@ -22,6 +22,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="20" FontWeight="Bold" Foreground="DimGray"
@@ -34,6 +35,9 @@
             <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}"
                        ToolTip="{Binding ErrorMessage}" TextWrapping="WrapWithOverflow"
                        Visibility="{c:Binding '!Fulfilled and !IsInformational', FalseToVisibility=Collapsed}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="2" Text="{Binding WarningMessage}"
+                       ToolTip="{Binding WarningMessage}" TextWrapping="WrapWithOverflow"
+                       Foreground="DarkOrange" VerticalAlignment="Center"/>
         </Grid>
 
         <Button Grid.Column="2" Padding="5" Margin="5" VerticalAlignment="Center"

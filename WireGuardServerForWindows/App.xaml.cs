@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -34,41 +33,44 @@ namespace WireGuardServerForWindows
                 // Don't proceed to GUI if started with command-line args
                 Environment.Exit(0);
             }
+
+            StartWindowsNatRecovery();
+        }
+
+        private void StartWindowsNatRecovery()
+        {
+            int attempts = 0;
+            var recoveryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            recoveryTimer.Tick += (_, __) =>
+            {
+                attempts++;
+                var prerequisite = new InternetSharingPrerequisite();
+                string recoveryError;
+                prerequisite.TryRecover(out recoveryError);
+
+                // WinNAT itself is persistent. A few delayed attempts cover the
+                // common case where the WireGuard adapter appears after logon.
+                if (attempts >= 6)
+                {
+                    recoveryTimer.Stop();
+                }
+            };
+            recoveryTimer.Start();
         }
 
         private static void RestartInternetSharing(RestartInternetSharingCommand o)
         {
             var internetSharingPrerequisite = new InternetSharingPrerequisite();
-            string networkToShare = o.NetworkToShare;
-
-            if (string.IsNullOrEmpty(networkToShare))
-            {
-                // No network specified for re-sharing, retrieve the one already shared.
-                List<string> sharedNetworks = internetSharingPrerequisite.GetSharedNetworks();
-                networkToShare = sharedNetworks.FirstOrDefault();
-
-                if (string.IsNullOrEmpty(networkToShare))
-                {
-                    Console.WriteLine(WireGuardServerForWindows.Properties.Resources.CannotRestartInternetSharingNoNetwork);
-                    Environment.Exit(1);
-                }
-                else if (sharedNetworks.Skip(1).Any())
-                {
-                    Console.WriteLine(WireGuardServerForWindows.Properties.Resources.CannotRestartInternetSharingMultipleNetworks);
-                    Environment.Exit(1);
-                }
-            }
 
             if (internetSharingPrerequisite.Fulfilled)
             {
-                // Internet sharing is already enabled. Disable it, first.
+                // WinNAT is already enabled. Remove it before recreating it.
                 Console.WriteLine(WireGuardServerForWindows.Properties.Resources.DisablingInternetSharing);
                 internetSharingPrerequisite.Configure();
             }
 
-            // Now enable it.
-            Console.WriteLine(WireGuardServerForWindows.Properties.Resources.EnablingInternetSharing, networkToShare);
-            internetSharingPrerequisite.Resolve(networkToShare);
+            Console.WriteLine(WireGuardServerForWindows.Properties.Resources.EnablingInternetSharing, "Windows NAT");
+            internetSharingPrerequisite.Resolve(o.NetworkToShare);
 
             int result = internetSharingPrerequisite.Fulfilled ? 0 : 1;
 

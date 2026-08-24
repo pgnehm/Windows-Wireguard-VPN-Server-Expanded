@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WireGuardAPI;
@@ -34,7 +34,9 @@ namespace WireGuardServerForWindows.Models
             Mouse.OverrideCursor = Cursors.Wait;
             
             string downloadPath = Path.Combine(Path.GetTempPath(), "wireguard.exe");
-            new WebClient().DownloadFile(wireGuardExeDownload, downloadPath);
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+            byte[] installer = httpClient.GetByteArrayAsync(wireGuardExeDownload).GetAwaiter().GetResult();
+            File.WriteAllBytes(downloadPath, installer);
             Process.Start(new ProcessStartInfo
             {
                 FileName = downloadPath,

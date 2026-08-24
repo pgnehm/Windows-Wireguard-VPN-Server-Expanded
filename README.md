@@ -6,6 +6,82 @@ WS4W is a desktop application that allows running and managing a WireGuard serve
 
 Inspired by Henry Chang's post, [How to Setup Wireguard VPN Server On Windows](https://www.henrychang.ca/how-to-setup-wireguard-vpn-server-on-windows/), my goal was to create an application that automated and simplified many of the complex steps. While still not quite a plug-and-play solution, the idea is to be able to perform each of the prerequisite steps, one-by-one, without running any scripts, modifying the Registry, or entering the Control Panel.
 
+## Project status
+
+This repository is the active development line for WS4W. The current application version is `1.7.0` and targets supported Windows systems with the .NET 10 Windows Desktop runtime/SDK. The current product mode is **Standard VPN**: WireGuard clients connect to this Windows host, and Windows NAT routes their IPv4 traffic through the host's normal network connection.
+
+The project is being developed in incremental stages. This README is intentionally also a running technical status document; implementation notes, validation results, and roadmap changes should be recorded here as the project evolves.
+
+### Current release capabilities
+
+The current line includes:
+
+* WireGuard installation, server and client configuration, QR-code display, and tunnel-service management.
+* Configurable MTU written to generated server and client profiles and applied to the live WireGuard adapter when the tunnel is installed or updated.
+* Windows NAT (WinNAT) instead of Windows Internet Connection Sharing (ICS), avoiding mass changes to unrelated adapter-sharing settings.
+* Automatic WinNAT recovery through the installed `WS4WPrivileged` Windows service.
+* Structured server status and network diagnostics, including handshake/traffic parsing, MTU reporting, DNS and connectivity checks, and IPv4/IPv6 state.
+* Optional IPv4 kill-switch behavior, explicit DNS requirements for generated clients, IPv6-disable protection, and WireGuard-subnet-scoped firewall rules.
+* DPAPI protection for private and preshared keys stored in editable WS4W data files. WireGuard runtime configuration files necessarily contain plaintext keys while the service is using them.
+* CLI support for recreating the WS4W WinNAT configuration after a network-stack or adapter change.
+
+### Current boundaries
+
+The WPF application still requests administrator privileges for several legacy WireGuard and Windows networking operations. The privileged service currently focuses on automatic NAT recovery; the broader least-privilege service boundary is planned work.
+
+Transparent relay/proxy behavior is **not** enabled. WS4W does not start a public SOCKS/HTTP relay, intercept traffic, or attempt to disguise a VPN as ordinary browser traffic. Adding interception without loop prevention, firewall policy, and a service boundary could create an accidental open proxy, so that work belongs after the foundation phase.
+
+Live tunnel MTU changes still require manual validation on a machine with an active WireGuard tunnel. Automated tests cover configuration generation and the core safety logic, but they do not replace testing against the installed WireGuard driver and the host's real adapters.
+
+## Development quick start
+
+### Requirements
+
+* Windows 10/11 x64 with administrator access for installation and networking tests.
+* .NET 10 SDK with Windows Desktop support.
+* WireGuard for Windows for live tunnel tests. The application can download/install WireGuard as part of its normal workflow.
+* Inno Setup 6 only when building the Windows installer.
+
+### Build and test
+
+From the repository root:
+
+```powershell
+dotnet restore
+dotnet build WireGuardServerForWindows.sln --configuration Release
+dotnet test WireGuardServerForWindows.sln --configuration Release --no-build
+```
+
+The GitHub Actions workflow in `.github/workflows/restore_build_test.yml` runs restore, build, and test on Windows. The WPF application and the service are Windows-only projects.
+
+### Build the installer
+
+Build the release binaries first, then compile `Installer/WS4WSetupScript.iss` with Inno Setup 6. The installer version must match the application version in `Directory.Build.props` and the corresponding version metadata under `WireGuardServerForWindows/`.
+
+### Safe development workflow
+
+Networking changes should be developed in this order:
+
+1. Add or update configuration/model tests.
+2. Build and run the full test suite.
+3. Test the prerequisite against a disposable Windows adapter/tunnel.
+4. Test failure and rollback paths, including adapter disconnects and reboot recovery.
+5. Build and install a versioned installer before calling the change release-ready.
+
+Do not test kill-switch or routing changes on a machine where loss of connectivity would be unsafe without local access.
+
+## Architecture at a glance
+
+The solution currently contains:
+
+* `WireGuardServerForWindows`: WPF UI, configuration models, prerequisites, diagnostics, firewall/NAT integration, and the current privileged workflow.
+* `WireGuardServerForWindows.Service`: the Windows background service used for boot-time and delayed WinNAT recovery.
+* `WireGuardAPI`: process execution and WireGuard command integration.
+* `WireGuardServerForWindows.Cli.Options` and `WireGuardServerForWindowsCli`: command-line options and CLI entry point.
+* `WireGuardServerForWindows.Tests`: configuration, MTU, DPAPI, parsing, and safety-focused tests.
+
+The intended long-term architecture is a non-administrator UI communicating with a narrowly scoped, administrator-owned service. Every service command should validate its inputs, use explicit executable paths, log an actionable result, and avoid accepting arbitrary command lines or arbitrary proxy destinations.
+
 # Getting Started
 The latest release is available [here](https://github.com/micahmo/WireGuardServerForWindows/releases/latest). Download the installer and run.
 
@@ -31,7 +107,13 @@ Here you can configure the server endpoint. See the WireGuard documentation for 
 
 > **Note**: It is important that the server's network range not conflict with the host system's IP address or LAN network range.
 
-In addition to creating/udpating the configuration file for the server endpoint, editing the server configuration will also update the `ScopeAddress` registry value (under `HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters`). This is the IP address that is used for the WireGuard adapter when using the Internet Sharing feature (explained [here](#internet-sharing)). Thus, the Address property of the server configuration serves to determine the allowable addresses for clients, as well as the IP that Windows will assign to the WireGuard adapter when performing Internet Sharing. Note the IP address is grabbed from the `ScopeAddress` at the time when Internet Sharing is first performed. That means that if the server's IP address is changed in the configuration (and thus the `ScopeAddress` registry value is updated), the WireGuard interface will no longer accurately reflect the desired server IP. Therefore, WS4W will prompt to re-share internet. If canceled, Internet Sharing will be disabled and will have to be re-enabled manually.
+In addition to creating/updating the configuration file for the server endpoint, editing the server configuration also updates generated client configurations and the live WireGuard interface. The configured network range is used by Windows NAT (WinNAT) as the internal NAT prefix.
+
+#### MTU
+
+The server configuration includes an MTU setting. The default is `1420`, which is typical for WireGuard over a 1500-byte network because WireGuard adds encapsulation overhead. The value is written to the server configuration and to generated client configurations. It is also applied to the live Windows WireGuard adapter when the tunnel is installed or updated.
+
+Use `1500` only when the complete path between the client and server supports it. Increasing the MTU changes packet sizing; it does not by itself remove VPN indicators from browser or TCP fingerprinting systems.
 
 > **Important**: You must configure port forwarding on your router. Forward all UDP traffic that is destined for your server endpoint port (default `51820`) to the LAN IP of your server. Every router is different, so it is difficult to give specific guidance here. As an example, here is what the port forwarding rule would look like on a Verizon Quantum Gateway router.
 > 
@@ -42,7 +124,7 @@ You should set the Endpoint property to your public IPv4, IPv6, or domain addres
 ### Client Configuration
 ![ClientConfiguration](https://i.imgur.com/frxdJ7S.png)
 
-Here you can configure the client(s). The Address can be entered manually or calculated based on the server's network range. For example, if the server's network is `10.253.0.0/24`, the client config can determine that `10.253.0.2` is a valid address. Note that the first address in the range (in this case, `10.253.0.1`) is reserved for the server. DNS is optional, but recommended. Lastly, the Private Key and Public Keys are again generated using `wg genkey` and `wg pubkey [private key]`. However, the Preshared Key must match the server's. If it has already been generated in the server config, it can be automatically copied to the client config.
+Here you can configure the client(s). The Address can be entered manually or calculated based on the server's network range. For example, if the server's network is `10.253.0.0/24`, the client config can determine that `10.253.0.2` is a valid address. Note that the first address in the range (in this case, `10.253.0.1`) is reserved for the server. DNS is optional when DNS leak protection is disabled; otherwise each generated profile must specify at least one DNS server. Lastly, the Private Key and Public Keys are again generated using `wg genkey` and `wg pubkey [private key]`. However, the Preshared Key must match the server's. If it has already been generated in the server config, it can be automatically copied to the client config.
 
 Once configured, it's easy to import the configuration into your client app of choice via QR code or by exporting the `.conf` file.
 
@@ -60,23 +142,23 @@ Even after the tunnel service is installed, some protocols may be blocked. It is
 
 > **Note**: On a system where the shared internet connection originates from a domain network, this step is not necessary, as the WireGuard interfaces picks up the profile of the shared domain network.
 
-### Internet Sharing
-![InternetSharing](https://i.imgur.com/GCKoVIZ.png)
+### Windows NAT
+Windows NAT (WinNAT) provides the routing and address translation needed for connected WireGuard peers to reach the host's normal network routes. WS4W creates a named NAT object for the configured WireGuard network and enables forwarding on the `wg_server` interface.
 
-Perhaps most importantly, internet sharing must be enabled in order to provide a real network connection to the WireGuard interface. In Windows, this is accomplished using Internet Connection Sharing, which serves as NAT router between the system's public network and the devices connected to the WireGuard interface.
+WinNAT is stored by Windows and does not use Internet Connection Sharing's adapter-sharing state or its reboot-persistence registry workaround. No public adapter needs to be selected: Windows uses its normal route to the internet or LAN.
 
-When configuring this option, you may select any of your network adapters to share. Note that it will likely only work for adapters whose status is `Connected`, and it will only be useful for adapters which provide internet or LAN access.
+The installer also registers `WS4WPrivileged`, a small recovery service. It retries the WS4W NAT repair after boot and after delayed adapter initialization. Existing third-party ICS assignments are not mass-disabled or overwritten.
 
-> **Note:** When performing internet sharing, the WireGuard adapter is assigned an IP from the `ScopeAddress` registry value (under `HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters`). This value is automatically set when updating the Address property of the server configuration. See more [here](#server-configuration).
+### Security settings
+The server editor exposes three safety controls:
 
-### Persistent Internet Sharing
-There is a known bug in Windows that causes Internet Sharing to become disabled after a reboot. If the WireGuard server is intended to be left unattended, it is recommended to enable Persistent Internet Sharing so that no interaction is required after rebooting.
+* `Kill switch` adds a firewall block for traffic sourced from the WireGuard subnet.
+* `DNS leak protection` requires every generated client profile to contain explicit DNS servers.
+* `Disable IPv6` is enabled by default because the current WinNAT path is IPv4-only. IPv6 forwarding is not silently enabled.
 
-When enabling this feature, two steps are performed.
-1. The `Internet Connection Sharing` service startup mode is changed from `Manual` to `Automatic`.
-2. The value of the `EnableRebootPersistConnection` regstry value in `HKLM\Software\Microsoft\Windows\CurrentVersion\SharedAccess` is set to `1` (it is created if not found).
+Private and preshared keys in the editable WS4W data files are protected with the current Windows user's DPAPI. WireGuard runtime files must still contain plaintext keys because the WireGuard service reads those files.
 
-**Warning**: This feature is currently unreliable due to Windows bugs, and may not consistently preserve internet sharing through reboots. To ensure that Internet Sharing is enabled after a reboot, see [Internet Sharing Workaround](#internet-sharing-workaround).
+Firewall rules are named `WS4W-*` and restricted to the WireGuard interface/subnet. WS4W does not expose a public relay, SOCKS proxy, or transparent proxy by default.
 
 ### View Server Status
 ![ServerStatus](https://i.imgur.com/dcSJXKU.png)
@@ -95,22 +177,23 @@ There is also a CLI bundled in the portable download called `ws4w.exe` which can
 The CLI uses verbs, or top-level commands, each of which has its own set of options. You can run `ws4w.exe --help` for a list of all verbs or `ws4w.exe verb --help` to see the list of options for a particular verb.
 
 #### List of Supported Verbs
-* ```ws4w.exe restartinternetsharing [--network <NETWORK_TO_SHARE>]```
-	* This will tell WS4W to attempt to restart the Internet Sharing feature.
-	* The `--network` option may be passed to specify which network WS4W should share.
-	* If Internet Sharing is already enabled, WS4W will attempt to reshare the same network (unless `--network` is passed).
-	* If multiple networks are already shared, it is not possible to tell which one is shared with the WireGuard network, so the `--network` option must be passed to specify.
-	* If Internet Sharing is not already enabled, the `--network` option must be passed, otherwise there is no way to know which network to share.
-	* The exit code will be 0 if the requested or previously shared network was successfully reshared.
+* ```ws4w.exe restartinternetsharing [--network <LEGACY_OPTION>]```
+	* This recreates the WS4W Windows NAT configuration.
+	* The `--network` option is retained for script compatibility and is ignored; WinNAT uses the normal Windows route rather than a selected public adapter.
+	* The exit code will be 0 if the NAT configuration was successfully recreated.
 * ```ws4w.exe setpath```
     * This will tell WS4W to add the current executing directory to the system's `PATH` environment variable. It is mainly intended to be invoked by the installer but may be called manually after the fact.
     * This verb has no options.
 
 # Known Issues
-Even following the steps in Henry's guide, the Persistent Internet Sharing feature is unreliable. A reboot may still cause the the internet sharing to fail, even though the `Internet Connection Sharing` service is running, and the network interface indicates that it is sharing in Control Panel. Only unsharing and resharing can fix this.
+WinNAT requires a supported Windows version with the built-in NetNat PowerShell module. If another application already owns the required NAT prefix, WS4W will report the Windows error instead of changing that NAT object.
 
-### Internet Sharing Workaround
-Fortunately, the CLI makes the process of unsharing and resharing easy to automate. Following is an example using the Windows Task Scheduler.
+The privileged-service project is currently used for automatic NAT recovery. The WPF editor still requests elevation for the remaining legacy WireGuard/Windows operations; moving every privileged call behind a least-privilege service is a follow-up foundation step.
+
+Transparent Relay mode is intentionally not enabled in this release. Adding WinDivert/GOST interception without the service boundary and loop/firewall policy would risk creating an accidental open proxy. The current release supports Standard VPN mode only.
+
+### Recreating Windows NAT from Task Scheduler
+The CLI can recreate the WS4W NAT object after a network stack reset or other external change. Following is an example using the Windows Task Scheduler.
 
 1. Create a task which runs whether or not the user is logged in.
 ![image](https://user-images.githubusercontent.com/7417301/116771243-c457f300-aa17-11eb-9373-1b26dedfb52b.png)
@@ -120,19 +203,6 @@ Fortunately, the CLI makes the process of unsharing and resharing easy to automa
 ![image](https://user-images.githubusercontent.com/7417301/116771293-23b60300-aa18-11eb-9070-1f2c2c0bb21d.png)
 ![image](https://user-images.githubusercontent.com/7417301/116771300-36c8d300-aa18-11eb-825d-28f8a74078f7.png)
 
-### Inability to Enable Internet Sharing
-If you experience the following error message when enabling Internet Sharing, please perform the following manual steps.
-
-![image](https://user-images.githubusercontent.com/7417301/145692723-f90e6e95-4628-4725-a44d-54377097f883.png)
-
- - Open Network Connections in the Control Panel.
- - Right-click > Properties on the network interface that you want to share.
-    - Go to the Sharing tab and check "Allow other network users to connect through this computer's Internet connection".
-	- From the "Home networking connection" dropdown, choose `wg_server`.
-	- Press OK.
- - Close and reopen WS4W. It should now show Internet Sharing enabled, and subsequent attempts to disable/re-enable should be sucessful going forward.
-
-> Note: This issue is often triggered after creating a new virtual switch for a VM. The manual workaround should only be needed once after that and does not affect the virtual switch.
 
 # Goals
 One of the more lofty goals of this project was to run a VPN behind NAT without port forwarding. I am interested by Jordan Whited's post, [WireGuard Endpoint Discovery and NAT Traversal using DNS-SD](https://www.jordanwhited.com/posts/wireguard-endpoint-discovery-nat-traversal/) and hope to investigate the possibility of integrating it into this application at some point.

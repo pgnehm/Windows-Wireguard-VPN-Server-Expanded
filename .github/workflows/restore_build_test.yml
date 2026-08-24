@@ -1,29 +1,33 @@
-name: Run Unit Tests
+name: Build and test
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
-  restore_build_test:
-
+  build_test:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
-      
-      # Setup: Need .NET Core for restore, MSBuild for build, and VSTest for test
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1.7.2
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 3.1.x
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.0.3
-      - name: Setup VSTest
-        uses: darenm/Setup-VSTest@v1
-      
-      # Restore, build, test
+          dotnet-version: 10.0.x
+
       - name: Restore
-        run: dotnet restore
-      - name: Build
-        run: msbuild
+        run: dotnet restore .\WireGuardServerForWindows.sln
+
+      - name: Build release
+        run: dotnet build .\WireGuardServerForWindows.sln --configuration Release --no-restore
+
       - name: Test
-        run: vstest.console WireGuardServerForWindows.Tests\bin\Debug\netcoreapp3.1\WireGuardServerForWindows.Tests.dll
+        run: dotnet test .\WireGuardServerForWindows.Tests\WireGuardServerForWindows.Tests.csproj --configuration Release --no-build --no-restore
+
+      - name: Upload application build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ws4w-release-binaries
+          path: WireGuardServerForWindows\bin\Release\net10.0-windows\

@@ -99,13 +99,13 @@
 		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
 	</resheader>
   <data name="RestartInternetSharingHelpText" xml:space="preserve">
-    <value>Attempts to Disable Internet Sharing and then Enable Internet Sharing.</value>
+    <value>Recreates the WireGuard Windows NAT configuration.</value>
   </data>
     <data name="SetPathHelpText" xml:space="preserve">
     <value>Adds the directory containing the currently executing ws4w.exe to the system's PATH environment variable.</value>
   </data>
   <data name="RestartInternetSharingNetworkHelpText" xml:space="preserve">
-    <value>Specify the network to share with WireGuard. Useful if internet sharing is not already enabled, or to differentiate when multiple networks are already shared.</value>
+    <value>Legacy compatibility option. WinNAT uses the normal Windows route and is not bound to one public adapter.</value>
   </data>
     <data name="CantLoadPath" xml:space="preserve">
         <value>Unable to load the system's PATH environment variable.</value>

@@ -1,22 +1,52 @@
-﻿<Window x:Class="WireGuardServerForWindows.Controls.ServerStatusWindow"
+<Window x:Class="WireGuardServerForWindows.Controls.ServerStatusWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:WireGuardServerForWindows.Controls"
         xmlns:properties="clr-namespace:WireGuardServerForWindows.Properties"
         xmlns:models="clr-namespace:WireGuardServerForWindows.Models"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=models:ServerStatusPrerequisite}"
-        Title="{x:Static properties:Resources.ServerStatus}" Height="400" Width="450">
-    <Grid>
+        Title="{x:Static properties:Resources.ServerStatus}" Height="620" Width="700">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <CheckBox Grid.Row="0" Margin="10" Content="{x:Static properties:Resources.UpdateLive}" IsChecked="{Binding UpdateLive}"/>
-        <TextBox Grid.Row="1" Margin="10" Text="{Binding ServerStatus, Mode=OneWay}" FontFamily="Consolas" IsReadOnly="True"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+        <CheckBox Grid.Row="0" Margin="0,0,0,10" Content="{x:Static properties:Resources.UpdateLive}" IsChecked="{Binding UpdateLive}"/>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="190"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="WireGuard" FontSize="18" FontWeight="Bold" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="1" Text="Server" FontWeight="SemiBold"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ServerRunning}"/>
+                <TextBlock Grid.Row="2" Text="Last client handshake" FontWeight="SemiBold"/><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastClientHandshake}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="3" Text="Bytes received / sent" FontWeight="SemiBold"/><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TransferStatus}"/>
+                <TextBlock Grid.Row="4" Text="MTU currently applied" FontWeight="SemiBold"/><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MtuCurrentlyApplied}"/>
+                <TextBlock Grid.Row="5" Text="Internet sharing" FontWeight="SemiBold"/><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding InternetSharingStatus}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="6" Text="Upstream adapter" FontWeight="SemiBold"/><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding UpstreamAdapter}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="7" Text="Routing" FontWeight="SemiBold"/><TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding RoutingStatus}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="8" Text="DNS" FontWeight="SemiBold"/><TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding DnsStatus}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="9" Text="Internet access" FontWeight="SemiBold"/><TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding InternetAccessStatus}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="10" Text="IPv4" FontWeight="SemiBold"/><TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Ipv4Status}"/>
+                <TextBlock Grid.Row="11" Text="IPv6" FontWeight="SemiBold"/><TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding Ipv6Status}"/>
+                <TextBlock Grid.Row="12" Grid.ColumnSpan="2" Text="Recommended fixes" FontSize="18" FontWeight="Bold" Margin="0,16,0,6"/>
+                <TextBlock Grid.Row="13" Grid.ColumnSpan="2" Text="{Binding RecommendedFixes}" TextWrapping="Wrap"/>
+                <StackPanel Grid.Row="14" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,16,0,0">
+                    <Button Content="Repair Windows NAT" Command="{Binding RepairNatCommand}" Padding="10,5" Margin="0,0,8,0"/>
+                    <Button Content="Re-apply MTU" Command="{Binding ReapplyMtuCommand}" Padding="10,5"/>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
     </Grid>
 </Window>

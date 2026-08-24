@@ -18,7 +18,8 @@ namespace WireGuardServerForWindows.Models
         {
             // Server properties
             PrivateKeyProperty.TargetTypes.Add(GetType());
-            //AddressProperty.TargetTypes.Add(GetType());
+            MtuProperty.TargetTypes.Add(GetType());
+            MtuProperty.TargetTypes.Add(typeof(ClientConfiguration));
             ListenPortProperty.TargetTypes.Add(GetType());
 
             // Client properties
@@ -188,6 +189,72 @@ namespace WireGuardServerForWindows.Models
         };
         private ConfigurationProperty _allowedIpsProperty;
 
+        /// <summary>
+        /// The MTU used by the WireGuard server interface and generated client configurations.
+        /// A typical Ethernet path uses 1420 because WireGuard adds 80 bytes of overhead.
+        /// </summary>
+        public ConfigurationProperty MtuProperty => _mtuProperty ??= new ConfigurationProperty(this)
+        {
+            Index = 4,
+            PersistentPropertyName = "MTU",
+            Name = nameof(MtuProperty),
+            Description = Resources.MtuDescription,
+            DefaultValue = "1420",
+            Validation = new ConfigurationPropertyValidation
+            {
+                Validate = obj =>
+                {
+                    if (int.TryParse(obj.Value, out int mtu) && mtu >= 1280 && mtu <= 65535)
+                    {
+                        return null;
+                    }
+
+                    return Resources.MtuValidationError;
+                }
+            }
+        };
+        private ConfigurationProperty _mtuProperty;
+
+        public ConfigurationProperty KillSwitchProperty => _killSwitchProperty ??= new ConfigurationProperty(this)
+        {
+            Index = 5,
+            PersistentPropertyName = "KillSwitch",
+            Name = nameof(KillSwitchProperty),
+            Description = "Block traffic sourced from the WireGuard subnet when the server tunnel path is unavailable.",
+            DefaultValue = bool.FalseString,
+            Validation = BooleanPropertyValidation
+        };
+        private ConfigurationProperty _killSwitchProperty;
+
+        public ConfigurationProperty DnsLeakProtectionProperty => _dnsLeakProtectionProperty ??= new ConfigurationProperty(this)
+        {
+            Index = 6,
+            PersistentPropertyName = "DnsLeakProtection",
+            Name = nameof(DnsLeakProtectionProperty),
+            Description = "Require generated client profiles to contain explicit DNS servers.",
+            DefaultValue = bool.TrueString,
+            Validation = BooleanPropertyValidation
+        };
+        private ConfigurationProperty _dnsLeakProtectionProperty;
+
+        public ConfigurationProperty DisableIpv6Property => _disableIpv6Property ??= new ConfigurationProperty(this)
+        {
+            Index = 7,
+            PersistentPropertyName = "DisableIPv6",
+            Name = nameof(DisableIpv6Property),
+            Description = "Explicitly disable IPv6 forwarding for this IPv4-only server.",
+            DefaultValue = bool.TrueString,
+            Validation = BooleanPropertyValidation
+        };
+        private ConfigurationProperty _disableIpv6Property;
+
+        private static ConfigurationPropertyValidation BooleanPropertyValidation => new ConfigurationPropertyValidation
+        {
+            Validate = property => bool.TryParse(property.Value, out _)
+                ? null
+                : "Value must be True or False."
+        };
+
         public EndpointConfigurationProperty EndpointProperty => _endpointProperty ??= new EndpointConfigurationProperty(this)
         {
             Index = 3,
@@ -262,7 +329,7 @@ namespace WireGuardServerForWindows.Models
                 try
                 {
                     IPNetwork network = IPNetwork.Parse(AddressProperty.Value);
-                    result = network.ListIPAddress().Skip(1).FirstOrDefault()?.ToString() ?? string.Empty;
+                    result = NetworkAddressUtilities.GetFirstServerAddress(network)?.ToString() ?? string.Empty;
                 }
                 catch
                 {

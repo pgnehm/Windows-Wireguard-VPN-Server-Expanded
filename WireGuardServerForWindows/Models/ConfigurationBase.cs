@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -45,7 +46,9 @@ namespace WireGuardServerForWindows.Models
                 {
                     if (Properties.FirstOrDefault(p => p.PersistentPropertyName == setting.Name) is { } property)
                     {
-                        property.Value = setting.StringValue;
+                        property.Value = IsSensitiveProperty(property)
+                            ? DpapiSecretProtector.Unprotect(setting.StringValue)
+                            : setting.StringValue;
                     }
                 }
             }
@@ -64,7 +67,8 @@ namespace WireGuardServerForWindows.Models
             configuration[sectionName].PreComment = NameProperty.Value ?? string.Empty;
             foreach (ConfigurationProperty property in Properties)
             {
-                configuration[sectionName][property.PersistentPropertyName].RawValue = property.Value;
+                configuration[sectionName][property.PersistentPropertyName].RawValue =
+                    IsSensitiveProperty(property) ? DpapiSecretProtector.Protect(property.Value) : property.Value;
             }
 
             return configuration;
@@ -94,6 +98,12 @@ namespace WireGuardServerForWindows.Models
         protected void SortProperties()
         {
             Properties.Sort((a, b) => a.Index - b.Index);
+        }
+
+        private static bool IsSensitiveProperty(ConfigurationProperty property)
+        {
+            return string.Equals(property.PersistentPropertyName, "PrivateKey", StringComparison.Ordinal)
+                || string.Equals(property.PersistentPropertyName, "PresharedKey", StringComparison.Ordinal);
         }
 
         #endregion

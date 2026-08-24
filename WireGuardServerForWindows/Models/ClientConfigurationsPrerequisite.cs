@@ -40,10 +40,25 @@ namespace WireGuardServerForWindows.Models
             }
             else
             {
+                bool requireDns = false;
+                if (File.Exists(ServerConfigurationPrerequisite.ServerDataPath))
+                {
+                    var serverConfiguration = new ServerConfiguration()
+                        .Load<ServerConfiguration>(Configuration.LoadFromFile(ServerConfigurationPrerequisite.ServerDataPath));
+                    bool.TryParse(serverConfiguration.DnsLeakProtectionProperty.Value, out requireDns);
+                }
+
                 // Validate all of the client(s)
                 foreach (string clientConfigurationFile in Directory.GetFiles(ClientDataDirectory, "*.conf"))
                 {
                     var clientConfiguration = new ClientConfiguration(null).Load<ClientConfiguration>(Configuration.LoadFromFile(clientConfigurationFile));
+
+                    if (requireDns && string.IsNullOrWhiteSpace(clientConfiguration.DnsProperty.Value))
+                    {
+                        result = false;
+                        ErrorMessage = "DNS leak protection is enabled, but a client has no DNS servers configured.";
+                        goto finish;
+                    }
 
                     foreach (ConfigurationProperty property in clientConfiguration.Properties)
                     {

@@ -2,8 +2,6 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using Bluegrams.Application;
-using Bluegrams.Application.WPF;
 using SharpConfig;
 using WireGuardServerForWindows.Models;
 
@@ -27,7 +25,6 @@ namespace WireGuardServerForWindows
             var tunnelServicePrerequisite = new TunnelServicePrerequisite();
             var privateNetworkPrerequisite = new PrivateNetworkPrerequisite();
             var internetSharingPrerequisite = new InternetSharingPrerequisite();
-            var persistentInternetSharingPrerequisite = new PersistentInternetSharingPrerequisite();
             var serverStatusPrerequisite = new ServerStatusPrerequisite();
 
             // -- Set up interdependencies --
@@ -43,7 +40,7 @@ namespace WireGuardServerForWindows
             tunnelServicePrerequisite.CanResolveFunc = () =>
                 wireGuardExePrerequisite.Fulfilled && serverConfigurationPrerequisite.Fulfilled && clientConfigurationsPrerequisite.Fulfilled;
 
-            // Can't uninstall the tunnel while internet sharing is enabled
+            // Can't uninstall the tunnel while Windows NAT is enabled
             tunnelServicePrerequisite.CanConfigureFunc = () => internetSharingPrerequisite.Fulfilled == false;
             
             // Can't enable private network unless tunnel is installed, and private network must not be informational
@@ -53,7 +50,7 @@ namespace WireGuardServerForWindows
             // Can't configure private network if it's only information (e.g., on a domain)
             privateNetworkPrerequisite.CanConfigureFunc = () => privateNetworkPrerequisite.IsInformational == false;
 
-            // Can't enable internet sharing unless tunnel is installed
+            // Can't enable Windows NAT unless tunnel is installed
             internetSharingPrerequisite.CanResolveFunc = () => tunnelServicePrerequisite.Fulfilled;
 
             // Can't view server status unless tunnel is installed
@@ -67,8 +64,8 @@ namespace WireGuardServerForWindows
             mainWindowModel.PrerequisiteItems.Add(tunnelServicePrerequisite);
             mainWindowModel.PrerequisiteItems.Add(privateNetworkPrerequisite);
             mainWindowModel.PrerequisiteItems.Add(internetSharingPrerequisite);
-            mainWindowModel.PrerequisiteItems.Add(persistentInternetSharingPrerequisite);
             mainWindowModel.PrerequisiteItems.Add(serverStatusPrerequisite);
+            mainWindowModel.RefreshSummary();
 
             // If one of the prereqs changes, check the validity of all of them
             mainWindowModel.PrerequisiteItems.ForEach(i => i.PropertyChanged += PrerequisiteItemFulfilledChanged);
@@ -96,6 +93,8 @@ namespace WireGuardServerForWindows
 
                     Mouse.OverrideCursor = null;
 
+                    mainWindowModel.RefreshSummary();
+
                     // Now we can resubscribe to all
                     mainWindowModel.PrerequisiteItems.ForEach(i => i.PropertyChanged += PrerequisiteItemFulfilledChanged);
                 });
@@ -104,12 +103,12 @@ namespace WireGuardServerForWindows
             DataContext = mainWindowModel;
 
             // Check for updates
-            _updateChecker = new MyUpdateChecker("https://raw.githubusercontent.com/micahmo/WireGuardServerForWindows/master/WireGuardServerForWindows/VersionInfo2.xml", this);
+            _updateChecker = new MyUpdateChecker("https://raw.githubusercontent.com/alexunderboots/WireGuardServerForWindows/master/WireGuardServerForWindows/VersionInfo2.xml", this);
         }
 
         #region Private fields
 
-        private readonly WpfUpdateChecker _updateChecker;
+        private readonly MyUpdateChecker _updateChecker;
 
         #endregion
 
@@ -125,11 +124,12 @@ namespace WireGuardServerForWindows
 
         private void AboutBoxCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            new AboutBox(Icon, showLanguageSelection: false)
-            {
-                Owner = this,
-                UpdateChecker = _updateChecker,
-            }.ShowDialog();
+            MessageBox.Show(
+                this,
+                $"WireGuard Server for Windows {GetType().Assembly.GetName().Version}",
+                "About WS4W",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
     }
 }

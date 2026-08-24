@@ -4,7 +4,7 @@
 
 Download and install [Inno Setup](https://jrsoftware.org/isinfo.php).
 
-Download the [.NET Core 3.1 Desktop Runtime (v3.1.21)](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-3.1.21-windows-x64-installer) and place it in `WireGuardServerForWindows\Installer`.
+Download the [.NET 10 Desktop Runtime (v10.0.11)](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-10.0.11-windows-x64-installer) and place `windowsdesktop-runtime-10.0.11-win-x64.exe` in `WireGuardServerForWindows\Installer`.
 
 ## Generate Installer for New Version
 

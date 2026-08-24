@@ -1,10 +1,10 @@
 #define MyAppName "WireGuard Server for Windows"
-#define MyAppVersion "1.6.1"
+#define MyAppVersion "1.7.0"
 #define MyAppPublisher "Micah Morrison"
 #define MyAppURL "https://github.com/micahmo/WireGuardServerForWindows"
 #define MyAppExeName "WireGuardServerForWindows.exe"
 #define CliName "ws4w.exe"
-#define NetCoreRuntimeVersion "3.1.21"
+#define NetCoreRuntimeVersion "10.0.11"
 #define NetCoreRuntime "windowsdesktop-runtime-" + NetCoreRuntimeVersion + "-win-x64.exe"
 #define UniversalCrtKb "KB3118401"
 
@@ -25,7 +25,7 @@ DefaultDirName={autopf}\WS4W
 DefaultGroupName=WS4W
 AllowNoIcons=yes
 ; This is relative to the .iss file location
-SourceDir=..\WireGuardServerForWindows\bin\Release\netcoreapp3.1\
+SourceDir=..\WireGuardServerForWindows\bin\Release\net10.0-windows\
 ; These are relative to SourceDir (see RepoRoot)
 OutputDir={#RepoRoot}\Installer
 SetupIconFile={#RepoRoot}\WireGuardServerForWindows\Images\logo.ico
@@ -44,7 +44,7 @@ UCrtError={#MyAppName} requires the Universal C Runtime. Please perform all outs
 [Code]
 function NetCoreRuntimeNotInstalled: Boolean;
 begin
-  Result := not RegValueExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.NETCore.App', '{#NetCoreRuntimeVersion}');
+  Result := not RegValueExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App', '{#NetCoreRuntimeVersion}');
 end;
 
 // More info: https://docs.microsoft.com/en-us/cpp/windows/universal-crt-deployment?view=msvc-170
@@ -86,9 +86,18 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 ; .NET Core Desktop Runtime
 Filename: "{tmp}\{#NetCoreRuntime}"; Flags: runascurrentuser; StatusMsg: "Installing .NET Core Desktop Runtime..."; Check: NetCoreRuntimeNotInstalled
 
+; Privileged recovery service (runtime must be installed first)
+Filename: "{sys}\sc.exe"; Parameters: "create WS4WPrivileged binPath= ""{app}\WS4W.PrivilegedService.exe"" start= auto"; Flags: runhidden
+Filename: "{sys}\sc.exe"; Parameters: "start WS4WPrivileged"; Flags: runhidden
+
 ; CLI in Path
 Filename: "{app}\{#CliName}"; Parameters: "setpath"; Flags: runhidden nowait skipifsilent runascurrentuser; Tasks: setpath
 
+; Launch the application after installation
 ; runascurrentuser is needed to launch as admin
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser
+
+[UninstallRun]
+Filename: "{sys}\sc.exe"; Parameters: "stop WS4WPrivileged"; Flags: runhidden; RunOnceId: "WS4WPrivilegedStop"
+Filename: "{sys}\sc.exe"; Parameters: "delete WS4WPrivileged"; Flags: runhidden; RunOnceId: "WS4WPrivilegedDelete"
 

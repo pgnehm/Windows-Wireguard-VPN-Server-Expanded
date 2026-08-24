@@ -51,6 +51,17 @@ namespace WireGuardServerForWindows.Models
         }
         private string _errorMessage;
 
+        /// <summary>
+        /// A non-blocking warning that remains visible even when the prerequisite
+        /// itself is fulfilled.
+        /// </summary>
+        public string WarningMessage
+        {
+            get => _warningMessage;
+            set => Set(nameof(WarningMessage), ref _warningMessage, value);
+        }
+        private string _warningMessage;
+
         public string ResolveText
         {
         get => _resolveText;

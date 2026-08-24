@@ -3,7 +3,7 @@ using GalaSoft.MvvmLight;
 
 namespace WireGuardServerForWindows.Models
 {
-    public class MainWindowModel : ObservableObject
+    public partial class MainWindowModel : ObservableObject
     {
         public MainWindowModel()
         {

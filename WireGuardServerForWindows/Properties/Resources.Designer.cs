@@ -476,7 +476,34 @@ namespace WireGuardServerForWindows.Properties {
                 return ResourceManager.GetString("ListenPortProperty", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Maximum packet size for the WireGuard interface. 1420 is a safe typical value; use 1500 only when the underlying network supports it without fragmentation..
+        /// </summary>
+        public static string MtuDescription {
+            get {
+                return ResourceManager.GetString("MtuDescription", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to MTU.
+        /// </summary>
+        public static string MtuProperty {
+            get {
+                return ResourceManager.GetString("MtuProperty", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to MTU must be a number between 1280 and 65535..
+        /// </summary>
+        public static string MtuValidationError {
+            get {
+                return ResourceManager.GetString("MtuValidationError", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Name.
         /// </summary>

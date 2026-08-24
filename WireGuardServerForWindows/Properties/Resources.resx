@@ -129,6 +129,24 @@
   <data name="AddressProperty" xml:space="preserve">
     <value>Address</value>
   </data>
+  <data name="MtuProperty" xml:space="preserve">
+    <value>MTU</value>
+  </data>
+  <data name="MtuDescription" xml:space="preserve">
+    <value>Maximum packet size for the WireGuard interface. 1420 is a safe typical value; use 1500 only when the underlying network supports it without fragmentation.</value>
+  </data>
+  <data name="MtuValidationError" xml:space="preserve">
+    <value>MTU must be a number between 1280 and 65535.</value>
+  </data>
+  <data name="KillSwitchProperty" xml:space="preserve">
+    <value>Kill switch</value>
+  </data>
+  <data name="DnsLeakProtectionProperty" xml:space="preserve">
+    <value>DNS leak protection</value>
+  </data>
+  <data name="DisableIpv6Property" xml:space="preserve">
+    <value>Disable IPv6</value>
+  </data>
   <data name="PropertyNameFormat" xml:space="preserve">
     <value>{0}:</value>
     <comment>{0} is the name of the property</comment>
@@ -325,19 +343,19 @@ Current value: {1}</value>
     <value>Revert back to public</value>
   </data>
   <data name="InternetSharingTitle" xml:space="preserve">
-    <value>Internet Sharing</value>
+    <value>Windows NAT</value>
   </data>
   <data name="InternetSharingSuccess" xml:space="preserve">
-    <value>Internet Sharing is enabled.</value>
+    <value>Windows NAT is enabled.</value>
   </data>
   <data name="InternetSharingError" xml:space="preserve">
-    <value>Internet Sharing is not enabled, connected peers will have no network access.</value>
+    <value>Windows NAT is not enabled, connected peers will have no network access.</value>
   </data>
   <data name="InternetSharingResolve" xml:space="preserve">
-    <value>Enable Internet Sharing</value>
+    <value>Enable Windows NAT</value>
   </data>
   <data name="InternetSharingConfigure" xml:space="preserve">
-    <value>Disable Internet Sharing</value>
+    <value>Disable Windows NAT</value>
   </data>
   <data name="PersistentInternetSharingTitle" xml:space="preserve">
     <value>Persistent Internet Sharing</value>
@@ -406,10 +424,10 @@ Current value: {1}</value>
     <value>Cannot restart internet sharing since multiple networks are currently shared. Specify a network to share with --network.</value>
   </data>
   <data name="DisablingInternetSharing" xml:space="preserve">
-    <value>Internet sharing is already enabled. Disabling...</value>
+    <value>Windows NAT is already enabled. Disabling...</value>
   </data>
   <data name="EnablingInternetSharing" xml:space="preserve">
-    <value>Enabling internet sharing with network '{0}'.</value>
+    <value>Enabling Windows NAT ({0}).</value>
   </data>
   <data name="EndpointPropertyAction" xml:space="preserve">
     <value>Detect Public IP Address</value>
