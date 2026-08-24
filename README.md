@@ -1,14 +1,16 @@
 
 <img src="https://i.imgur.com/6XRP3gB.png" width="100" height="100" />
 
-# WireGuard Server for Windows
-WS4W is a desktop application that allows running and managing a WireGuard server endpoint on Windows.
+# Windows WireGuard VPN Server — Expanded
+WS4W Expanded is a Windows desktop application for running and managing a WireGuard server endpoint.
 
-Inspired by Henry Chang's post, [How to Setup Wireguard VPN Server On Windows](https://www.henrychang.ca/how-to-setup-wireguard-vpn-server-on-windows/), my goal was to create an application that automated and simplified many of the complex steps. While still not quite a plug-and-play solution, the idea is to be able to perform each of the prerequisite steps, one-by-one, without running any scripts, modifying the Registry, or entering the Control Panel.
+This project is based on the original [WireGuard Server for Windows project](https://github.com/micahmo/WireGuardServerForWindows) by Micah Morrison. It retains the original application's foundation, WireGuard workflow, and MIT license while extending the project with newer Windows/.NET support, WinNAT-based routing, diagnostics, recovery, security controls, and a longer-term service architecture.
+
+The original project was inspired by Henry Chang's post, [How to Setup WireGuard VPN Server On Windows](https://www.henrychang.ca/how-to-setup-wireguard-vpn-server-on-windows/). WS4W Expanded continues that goal of simplifying the Windows networking steps required to operate a WireGuard server, while documenting the remaining limitations instead of presenting the application as a fully automatic or anonymous relay.
 
 ## Project status
 
-This repository is the active development line for WS4W. The current application version is `1.7.0` and targets supported Windows systems with the .NET 10 Windows Desktop runtime/SDK. The current product mode is **Standard VPN**: WireGuard clients connect to this Windows host, and Windows NAT routes their IPv4 traffic through the host's normal network connection.
+This repository is the active expanded development line for WS4W. The current application version is `1.7.0` and targets supported Windows systems with the .NET 10 Windows Desktop runtime/SDK. The current product mode is **Standard VPN**: WireGuard clients connect to this Windows host, and Windows NAT routes their IPv4 traffic through the host's normal network connection.
 
 The project is being developed in incremental stages. This README is intentionally also a running technical status document; implementation notes, validation results, and roadmap changes should be recorded here as the project evolves.
 
@@ -32,6 +34,12 @@ The WPF application still requests administrator privileges for several legacy W
 Transparent relay/proxy behavior is **not** enabled. WS4W does not start a public SOCKS/HTTP relay, intercept traffic, or attempt to disguise a VPN as ordinary browser traffic. Adding interception without loop prevention, firewall policy, and a service boundary could create an accidental open proxy, so that work belongs after the foundation phase.
 
 Live tunnel MTU changes still require manual validation on a machine with an active WireGuard tunnel. Automated tests cover configuration generation and the core safety logic, but they do not replace testing against the installed WireGuard driver and the host's real adapters.
+
+### Current roadmap
+
+The next validation milestone is an end-to-end test on a dedicated Windows machine: clean installation, WireGuard handshake, MTU `1420` and `1500`, reboot recovery, adapter disconnect/reconnect, WinNAT repair, DNS, IPv4/IPv6 behavior, diagnostics, and kill-switch behavior.
+
+The next major foundation milestone is moving the remaining privileged WireGuard and Windows networking operations behind `WS4WPrivileged`, allowing the UI to run without administrator rights while keeping the service narrowly scoped and safe. Transparent Relay mode, WinDivert interception, and outbound proxy integration remain future work and will not be enabled until that service and firewall boundary is complete.
 
 ## Development quick start
 
@@ -83,7 +91,7 @@ The solution currently contains:
 The intended long-term architecture is a non-administrator UI communicating with a narrowly scoped, administrator-owned service. Every service command should validate its inputs, use explicit executable paths, log an actionable result, and avoid accepting arbitrary command lines or arbitrary proxy destinations.
 
 # Getting Started
-The latest release is available [here](https://github.com/micahmo/WireGuardServerForWindows/releases/latest). Download the installer and run.
+Releases for this expanded project will be published on the [WS4W Expanded releases page](https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases). Development builds can be built locally by following the [development quick start](#development-quick-start).
 
 > **Note**: The application will request to run as Administrator. Due to all the finagling of the registry, Windows services, wg.exe calls, etc., it is easier to run the whole application elevated.
 
