@@ -27,6 +27,7 @@
                     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="WireGuard" FontSize="18" FontWeight="Bold" Margin="0,0,0,6"/>
                 <TextBlock Grid.Row="1" Text="Server" FontWeight="SemiBold"/><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ServerRunning}"/>
@@ -40,9 +41,10 @@
                 <TextBlock Grid.Row="9" Text="Internet access" FontWeight="SemiBold"/><TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding InternetAccessStatus}" TextWrapping="Wrap"/>
                 <TextBlock Grid.Row="10" Text="IPv4" FontWeight="SemiBold"/><TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Ipv4Status}"/>
                 <TextBlock Grid.Row="11" Text="IPv6" FontWeight="SemiBold"/><TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding Ipv6Status}"/>
-                <TextBlock Grid.Row="12" Grid.ColumnSpan="2" Text="Recommended fixes" FontSize="18" FontWeight="Bold" Margin="0,16,0,6"/>
-                <TextBlock Grid.Row="13" Grid.ColumnSpan="2" Text="{Binding RecommendedFixes}" TextWrapping="Wrap"/>
-                <StackPanel Grid.Row="14" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,16,0,0">
+                <TextBlock Grid.Row="12" Text="Checked" FontWeight="SemiBold"/><TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding DiagnosticsCheckedAt}"/>
+                <TextBlock Grid.Row="13" Grid.ColumnSpan="2" Text="Recommended fixes" FontSize="18" FontWeight="Bold" Margin="0,16,0,6"/>
+                <TextBlock Grid.Row="14" Grid.ColumnSpan="2" Text="{Binding RecommendedFixes}" TextWrapping="Wrap"/>
+                <StackPanel Grid.Row="15" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,16,0,0">
                     <Button Content="Repair Windows NAT" Command="{Binding RepairNatCommand}" Padding="10,5" Margin="0,0,8,0"/>
                     <Button Content="Re-apply MTU" Command="{Binding ReapplyMtuCommand}" Padding="10,5"/>
                 </StackPanel>

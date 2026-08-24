@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -46,7 +47,10 @@ namespace WireGuardServerForWindows
                 attempts++;
                 var prerequisite = new InternetSharingPrerequisite();
                 string recoveryError;
-                prerequisite.TryRecover(out recoveryError);
+                if (!prerequisite.TryRecover(out recoveryError) && !string.IsNullOrEmpty(recoveryError))
+                {
+                    Trace.WriteLine($"WS4W NAT recovery attempt {attempts} failed: {recoveryError}");
+                }
 
                 // WinNAT itself is persistent. A few delayed attempts cover the
                 // common case where the WireGuard adapter appears after logon.

@@ -1,4 +1,6 @@
-# Installer
+# WS4W Expanded Installer
+
+This installer packages the current Windows WireGuard VPN Server - Expanded build. The project is based on the original WS4W work by Micah Morrison; see the repository [README](../README.md) and [LICENSE](../LICENSE) for attribution.
 
 ## Prerequisite
 
@@ -10,7 +12,7 @@ Download the [.NET 10 Desktop Runtime (v10.0.11)](https://dotnet.microsoft.com/d
 
 Open the main `WireGuardServerForWindows.sln` in Visual Studio.
 * Change the build configuration to Release.
-* Edit `VersionInfo2.xml` to include the latest version, release date, and download path.
+* Edit `WireGuardServerForWindows\VersionInfo2.xml` to include the latest version, release date, and download path.
 * Bump assembly versions in `Directory.Build.props`.
 * Rebuild the solution
 

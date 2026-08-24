@@ -1,7 +1,7 @@
-#define MyAppName "WireGuard Server for Windows"
-#define MyAppVersion "1.7.0"
-#define MyAppPublisher "Micah Morrison"
-#define MyAppURL "https://github.com/micahmo/WireGuardServerForWindows"
+#define MyAppName "Windows WireGuard VPN Server - Expanded"
+#define MyAppVersion "1.7.1"
+#define MyAppPublisher "Patrick Gnehm"
+#define MyAppURL "https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded"
 #define MyAppExeName "WireGuardServerForWindows.exe"
 #define CliName "ws4w.exe"
 #define NetCoreRuntimeVersion "10.0.11"
@@ -12,7 +12,7 @@
 #define RepoRoot "..\..\..\.."
 
 [Setup]
-;PrivilegesRequired=admin
+PrivilegesRequired=admin
 AppId={{7EE6B381-7799-4674-B83C-5B07C71A5851}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -88,6 +88,9 @@ Filename: "{tmp}\{#NetCoreRuntime}"; Flags: runascurrentuser; StatusMsg: "Instal
 
 ; Privileged recovery service (runtime must be installed first)
 Filename: "{sys}\sc.exe"; Parameters: "create WS4WPrivileged binPath= ""{app}\WS4W.PrivilegedService.exe"" start= auto"; Flags: runhidden
+Filename: "{sys}\sc.exe"; Parameters: "config WS4WPrivileged start= delayed-auto"; Flags: runhidden
+Filename: "{sys}\sc.exe"; Parameters: "failure WS4WPrivileged reset= 86400 actions= restart/5000/restart/30000/restart/60000"; Flags: runhidden
+Filename: "{sys}\sc.exe"; Parameters: "failureflag WS4WPrivileged 1"; Flags: runhidden
 Filename: "{sys}\sc.exe"; Parameters: "start WS4WPrivileged"; Flags: runhidden
 
 ; CLI in Path

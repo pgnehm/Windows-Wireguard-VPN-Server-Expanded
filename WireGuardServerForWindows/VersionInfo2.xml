@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <!-- Things to update: Version, Date, Release Notes -->
 <AppUpdate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/micahmo/WireGuardServerForWindows/master/WireGuardServerForWindows/AppUpdate.xsd">
-  <Version>1.7.0.0</Version>
+           xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/main/WireGuardServerForWindows/AppUpdate.xsd">
+  <Version>1.7.1.0</Version>
   <ReleaseDate>2026-08-24</ReleaseDate>
   <!-- Default download -->
-  <DownloadLink>https://github.com/alexunderboots/WireGuardServerForWindows/releases/download/v1.7.0/WS4WSetup-1.7.0.exe</DownloadLink>
-  <DownloadFileName>WS4WSetup-1.7.0.exe</DownloadFileName>
+  <DownloadLink>https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases/download/v1.7.1/WS4WSetup-1.7.1.exe</DownloadLink>
+  <DownloadFileName>WS4WSetup-1.7.1.exe</DownloadFileName>
   <!-- Release notes -->
-  <VersionNotes>MTU configuration, Windows NAT reliability improvements, .NET 10 foundation, and diagnostics updates.</VersionNotes>
+  <VersionNotes>Pre-test reliability foundation: upstream route diagnostics, NAT recovery logging, service restart recovery, and networking preflight checks.</VersionNotes>
   <ReleaseNotes></ReleaseNotes>
 </AppUpdate>

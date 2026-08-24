@@ -103,7 +103,7 @@ namespace WireGuardServerForWindows
             DataContext = mainWindowModel;
 
             // Check for updates
-            _updateChecker = new MyUpdateChecker("https://raw.githubusercontent.com/alexunderboots/WireGuardServerForWindows/master/WireGuardServerForWindows/VersionInfo2.xml", this);
+            _updateChecker = new MyUpdateChecker("https://raw.githubusercontent.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/main/WireGuardServerForWindows/VersionInfo2.xml", this);
         }
 
         #region Private fields
@@ -126,7 +126,7 @@ namespace WireGuardServerForWindows
         {
             MessageBox.Show(
                 this,
-                $"WireGuard Server for Windows {GetType().Assembly.GetName().Version}",
+                $"Windows WireGuard VPN Server - Expanded {GetType().Assembly.GetName().Version}",
                 "About WS4W",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

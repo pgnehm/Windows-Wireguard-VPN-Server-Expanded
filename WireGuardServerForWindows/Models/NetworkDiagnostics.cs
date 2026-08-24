@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -13,8 +14,11 @@ namespace WireGuardServerForWindows.Models
         public string InternetAccess { get; init; } = "Unknown";
         public string Adapter { get; init; } = "Unknown";
         public bool HasConnectedAdapter { get; init; }
+        public bool HasDefaultRoute { get; init; }
         public bool HasDns { get; init; }
         public bool HasInternetAccess { get; init; }
+        public int DnsServerCount { get; init; }
+        public DateTimeOffset CheckedAtUtc { get; init; } = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
@@ -25,23 +29,63 @@ namespace WireGuardServerForWindows.Models
     {
         public static NetworkPathStatus CheckInternetPath()
         {
-            NetworkInterface adapter = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(IsCandidateAdapter)
-                .FirstOrDefault(n => n.GetIPProperties().GatewayAddresses.Any(g =>
-                    g.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork));
+            List<NetworkInterface> adapters;
+            try
+            {
+                adapters = NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(IsCandidateAdapter)
+                    .ToList();
+            }
+            catch (Exception exception)
+            {
+                return new NetworkPathStatus
+                {
+                    Routing = $"Failed: Windows could not enumerate network adapters ({exception.Message})",
+                    Dns = "Not checked",
+                    InternetAccess = "Not checked",
+                    Adapter = "Adapter enumeration failed"
+                };
+            }
+
+            NetworkInterface connectedAdapter = adapters.FirstOrDefault();
+            NetworkInterface adapter = adapters.FirstOrDefault(HasIpv4Gateway);
 
             if (adapter == null)
             {
                 return new NetworkPathStatus
                 {
-                    Routing = "Failed: no connected internet adapter with an IPv4 gateway was found.",
+                    Routing = connectedAdapter == null
+                        ? "Failed: no connected internet adapter was found."
+                        : "Failed: a connected adapter has no IPv4 default gateway.",
                     Dns = "Not checked",
-                    InternetAccess = "Failed: connect an Ethernet, Wi-Fi, or upstream adapter.",
-                    Adapter = "No connected upstream adapter"
+                    InternetAccess = "Failed: establish an IPv4 default route before starting the VPN.",
+                    Adapter = connectedAdapter == null
+                        ? "No connected upstream adapter"
+                        : $"{connectedAdapter.Name} ({connectedAdapter.NetworkInterfaceType})",
+                    HasConnectedAdapter = connectedAdapter != null,
+                    CheckedAtUtc = DateTimeOffset.UtcNow
                 };
             }
 
-            IPInterfaceProperties properties = adapter.GetIPProperties();
+            IPInterfaceProperties properties;
+            try
+            {
+                properties = adapter.GetIPProperties();
+            }
+            catch (Exception exception)
+            {
+                return new NetworkPathStatus
+                {
+                    Routing = "Failed: the upstream adapter properties could not be read.",
+                    Dns = "Not checked",
+                    InternetAccess = "Not checked",
+                    Adapter = $"{adapter.Name} ({adapter.NetworkInterfaceType}): {exception.Message}",
+                    HasConnectedAdapter = true,
+                    HasDefaultRoute = true,
+                    CheckedAtUtc = DateTimeOffset.UtcNow
+                };
+            }
+
             bool hasDns = properties.DnsAddresses.Any();
             string dnsStatus = hasDns ? $"Configured ({properties.DnsAddresses.Count} server(s))" : "Failed: no DNS server is configured.";
             bool dnsLookupSucceeded = false;
@@ -86,8 +130,11 @@ namespace WireGuardServerForWindows.Models
                     : "Failed: the host could not reach the internet over HTTPS.",
                 Adapter = $"{adapter.Name} ({adapter.NetworkInterfaceType})",
                 HasConnectedAdapter = true,
+                HasDefaultRoute = true,
                 HasDns = hasDns && dnsLookupSucceeded,
-                HasInternetAccess = internetAccess
+                HasInternetAccess = internetAccess,
+                DnsServerCount = properties.DnsAddresses.Count,
+                CheckedAtUtc = DateTimeOffset.UtcNow
             };
         }
 
@@ -97,6 +144,19 @@ namespace WireGuardServerForWindows.Models
                 && adapter.NetworkInterfaceType != NetworkInterfaceType.Loopback
                 && adapter.NetworkInterfaceType != NetworkInterfaceType.Tunnel
                 && adapter.NetworkInterfaceType != NetworkInterfaceType.Unknown;
+        }
+
+        private static bool HasIpv4Gateway(NetworkInterface adapter)
+        {
+            try
+            {
+                return adapter.GetIPProperties().GatewayAddresses.Any(g =>
+                    g.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

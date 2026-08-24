@@ -50,6 +50,7 @@ namespace WireGuardServerForWindows.Models
         {
             Mouse.OverrideCursor = Cursors.Wait;
             WarningMessage = null;
+            ErrorMessage = null;
 
             string networkPrefix = GetConfiguredNetworkPrefix();
             if (string.IsNullOrEmpty(networkPrefix))
@@ -68,13 +69,18 @@ namespace WireGuardServerForWindows.Models
             else
             {
                 NetworkPathStatus path = NetworkDiagnostics.CheckInternetPath();
-                if (!path.HasConnectedAdapter)
+                bool natConfigured = WindowsNatManager.IsConfigured(
+                    ServerConfigurationPrerequisite.WireGuardServerInterfaceName,
+                    networkPrefix,
+                    out string natError);
+                NetworkPreflightResult preflight = NetworkPreflight.Evaluate(networkPrefix, path, natConfigured);
+                if (!preflight.IsHealthy)
                 {
-                    WarningMessage = "Windows NAT is configured, but no connected upstream adapter was found. Connect Ethernet or Wi-Fi for client internet access.";
-                }
-                else if (!path.HasInternetAccess)
-                {
-                    WarningMessage = "Windows NAT is configured, but the host cannot currently reach the internet. Check the upstream route and firewall.";
+                    WarningMessage = preflight.Summary;
+                    if (!preflight.CanConfigure && !string.IsNullOrEmpty(natError))
+                    {
+                        WarningMessage = $"{WarningMessage} {natError}";
+                    }
                 }
             }
 

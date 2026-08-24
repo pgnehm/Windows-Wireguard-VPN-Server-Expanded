@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using GalaSoft.MvvmLight.Command;
 using WireGuardAPI;
@@ -27,11 +29,11 @@ namespace WireGuardServerForWindows.Models
             {
                 if (UpdateLive)
                 {
-                    RefreshDiagnostics();
+                    _ = RefreshDiagnosticsAsync();
                 }
             };
 
-            RefreshDiagnostics();
+            _ = RefreshDiagnosticsAsync();
         }
 
         public override BooleanTimeCachedProperty Fulfilled { get; } =
@@ -41,7 +43,7 @@ namespace WireGuardServerForWindows.Models
 
         public override void Configure()
         {
-            RefreshDiagnostics();
+            _ = RefreshDiagnosticsAsync();
             _updateTimer.IsEnabled = true;
             new ServerStatusWindow { DataContext = this }.ShowDialog();
             _updateTimer.IsEnabled = false;
@@ -58,26 +60,27 @@ namespace WireGuardServerForWindows.Models
         public string BytesSent => _wireGuard.BytesSent;
         public string TransferStatus => $"{BytesReceived} / {BytesSent}";
         public string MtuCurrentlyApplied => GetCurrentMtu();
-        public string InternetSharingStatus => GetInternetSharingStatus();
+        public string InternetSharingStatus => _internetSharingStatus;
         public string DnsStatus => _networkPath.Dns;
         public string Ipv4Status => GetAddressFamilyStatus(System.Net.Sockets.AddressFamily.InterNetwork);
         public string Ipv6Status => GetAddressFamilyStatus(System.Net.Sockets.AddressFamily.InterNetworkV6);
         public string RoutingStatus => _networkPath.Routing;
         public string InternetAccessStatus => _networkPath.InternetAccess;
         public string UpstreamAdapter => _networkPath.Adapter;
+        public string DiagnosticsCheckedAt => _networkPath.CheckedAtUtc.ToLocalTime().ToString("g");
         public string RecommendedFixes => GetRecommendedFixes();
 
         public RelayCommand RepairNatCommand => _repairNatCommand ??= new RelayCommand(() =>
         {
             new InternetSharingPrerequisite().Resolve();
-            RefreshDiagnostics();
+            _ = RefreshDiagnosticsAsync();
         });
         private RelayCommand _repairNatCommand;
 
         public RelayCommand ReapplyMtuCommand => _reapplyMtuCommand ??= new RelayCommand(() =>
         {
             new ServerConfigurationPrerequisite().Update();
-            RefreshDiagnostics();
+            _ = RefreshDiagnosticsAsync();
         });
         private RelayCommand _reapplyMtuCommand;
 
@@ -91,38 +94,63 @@ namespace WireGuardServerForWindows.Models
         private readonly DispatcherTimer _updateTimer;
         private WireGuardStatusSnapshot _wireGuard = new WireGuardStatusSnapshot();
         private NetworkPathStatus _networkPath = new NetworkPathStatus();
+        private string _internetSharingStatus = "Checking";
+        private int _refreshInProgress;
 
-        private void RefreshDiagnostics()
+        private async Task RefreshDiagnosticsAsync()
         {
+            if (Interlocked.Exchange(ref _refreshInProgress, 1) == 1)
+            {
+                return;
+            }
+
             try
             {
-                string output = new WireGuardExe().ExecuteCommand(
-                    new ShowCommand(ServerConfigurationPrerequisite.WireGuardServerInterfaceName));
-                _wireGuard = WireGuardStatusParser.Parse(output);
+                WireGuardStatusSnapshot wireGuard = await Task.Run(() =>
+                {
+                    try
+                    {
+                        string output = new WireGuardExe().ExecuteCommand(
+                            new ShowCommand(ServerConfigurationPrerequisite.WireGuardServerInterfaceName));
+                        return WireGuardStatusParser.Parse(output);
+                    }
+                    catch (Exception exception)
+                    {
+                        return new WireGuardStatusSnapshot { IsRunning = false, Error = exception.Message };
+                    }
+                });
+
+                NetworkPathStatus networkPath = await Task.Run(NetworkDiagnostics.CheckInternetPath);
+                string internetSharingStatus = await Task.Run(GetInternetSharingStatus);
+                _wireGuard = wireGuard;
+                _networkPath = networkPath;
+                _internetSharingStatus = internetSharingStatus;
             }
             catch (Exception exception)
             {
                 _wireGuard = new WireGuardStatusSnapshot { IsRunning = false, Error = exception.Message };
             }
-
-            _networkPath = NetworkDiagnostics.CheckInternetPath();
-
-            RaisePropertyChanged(nameof(WireGuard));
-            RaisePropertyChanged(nameof(NetworkPath));
-            RaisePropertyChanged(nameof(ServerRunning));
-            RaisePropertyChanged(nameof(LastClientHandshake));
-            RaisePropertyChanged(nameof(BytesReceived));
-            RaisePropertyChanged(nameof(BytesSent));
-            RaisePropertyChanged(nameof(TransferStatus));
-            RaisePropertyChanged(nameof(MtuCurrentlyApplied));
-            RaisePropertyChanged(nameof(InternetSharingStatus));
-            RaisePropertyChanged(nameof(DnsStatus));
-            RaisePropertyChanged(nameof(Ipv4Status));
-            RaisePropertyChanged(nameof(Ipv6Status));
-            RaisePropertyChanged(nameof(RoutingStatus));
-            RaisePropertyChanged(nameof(InternetAccessStatus));
-            RaisePropertyChanged(nameof(UpstreamAdapter));
-            RaisePropertyChanged(nameof(RecommendedFixes));
+            finally
+            {
+                RaisePropertyChanged(nameof(WireGuard));
+                RaisePropertyChanged(nameof(NetworkPath));
+                RaisePropertyChanged(nameof(ServerRunning));
+                RaisePropertyChanged(nameof(LastClientHandshake));
+                RaisePropertyChanged(nameof(BytesReceived));
+                RaisePropertyChanged(nameof(BytesSent));
+                RaisePropertyChanged(nameof(TransferStatus));
+                RaisePropertyChanged(nameof(MtuCurrentlyApplied));
+                RaisePropertyChanged(nameof(InternetSharingStatus));
+                RaisePropertyChanged(nameof(DnsStatus));
+                RaisePropertyChanged(nameof(Ipv4Status));
+                RaisePropertyChanged(nameof(Ipv6Status));
+                RaisePropertyChanged(nameof(RoutingStatus));
+                RaisePropertyChanged(nameof(InternetAccessStatus));
+                RaisePropertyChanged(nameof(UpstreamAdapter));
+                RaisePropertyChanged(nameof(DiagnosticsCheckedAt));
+                RaisePropertyChanged(nameof(RecommendedFixes));
+                Volatile.Write(ref _refreshInProgress, 0);
+            }
         }
 
         private string GetCurrentMtu()
@@ -176,9 +204,10 @@ namespace WireGuardServerForWindows.Models
             if (_wireGuard.PeerCount > 0 && _wireGuard.LastClientHandshake == "No handshake recorded")
                 fixes.Add("Have a client connect and verify its endpoint and firewall port.");
             if (!_networkPath.HasConnectedAdapter) fixes.Add("Connect the server to an Ethernet or Wi-Fi upstream adapter.");
-            if (!_networkPath.HasDns) fixes.Add("Configure a working DNS server on the upstream adapter.");
-            if (!_networkPath.HasInternetAccess) fixes.Add("Verify the default route and upstream firewall allow HTTPS access.");
-            if (GetInternetSharingStatus() != "Enabled") fixes.Add("Repair Windows NAT.");
+            else if (!_networkPath.HasDefaultRoute) fixes.Add("Configure an IPv4 default route on the connected upstream adapter.");
+            if (_networkPath.HasDefaultRoute && !_networkPath.HasDns) fixes.Add("Configure a working DNS server on the upstream adapter.");
+            if (_networkPath.HasDefaultRoute && !_networkPath.HasInternetAccess) fixes.Add("Verify the upstream firewall and confirm the host can reach the internet over HTTPS.");
+            if (InternetSharingStatus != "Enabled") fixes.Add("Repair Windows NAT.");
             if (fixes.Count == 0) fixes.Add("No immediate fix is recommended.");
             return string.Join(Environment.NewLine, fixes.Select(f => $"• {f}"));
         }

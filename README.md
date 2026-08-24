@@ -10,7 +10,7 @@ This repository is the expanded development line. It keeps the original projectâ
 
 ## Current status
 
-Current application version: **1.7.0**
+Current application version: **1.7.1**
 
 Current operating mode: **Standard VPN**
 
