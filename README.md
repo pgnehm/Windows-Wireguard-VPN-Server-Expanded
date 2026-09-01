@@ -46,28 +46,155 @@ This project is not currently a transparent relay, HTTP proxy, SOCKS proxy, or t
 - Live MTU behavior still requires validation with an active WireGuard tunnel and real network adapters.
 - Transparent Relay mode, WinDivert interception, GOST integration, and automatic TCP/HTTP/SOCKS forwarding are not implemented.
 
-## Installation and operation
+## Setup guide
 
-### Requirements
+This section is written for someone setting up a small Windows WireGuard server at home, in an office, or on a mini PC. The app still performs Windows networking changes, so expect to run it as administrator for now.
 
-- Windows 10/11 x64.
-- Administrator access for installation and current networking operations.
-- WireGuard for Windows. WS4W can download/install WireGuard as part of its workflow.
-- A UDP port forwarded from the router to the Windows host, normally `51820`.
-- A non-conflicting WireGuard subnet, such as `10.253.0.0/24`, that does not overlap the LAN or host network.
+### What you need before installing
+
+- A Windows 10 or Windows 11 x64 computer that will stay powered on while you want the VPN available.
+- Administrator access on that Windows computer.
+- A working internet connection on the Windows computer, preferably wired Ethernet.
+- Access to the router or firewall in front of the Windows computer.
+- A public IP address, dynamic DNS name, or other hostname that VPN clients can reach from outside your network.
+- One UDP port forwarded from the router to the Windows computer. The normal WireGuard port is `51820`.
+- A WireGuard subnet that does not overlap your normal home or office network. `10.253.0.0/24` is a reasonable starting value.
+
+Example: if your home LAN is `192.168.1.x`, do not use `192.168.1.x` for WireGuard. Use something separate, such as `10.253.0.x`.
+
+### Recommended server preparation
+
+Before installing WS4W Expanded, prepare the Windows machine:
+
+1. Install Windows updates and reboot.
+2. Give the server a stable LAN address. A router DHCP reservation is usually easier than manually setting a static IP in Windows.
+3. Confirm the server can browse the internet.
+4. Confirm the router forwards UDP port `51820` to the server's LAN address.
+5. If the server is behind a changing residential IP address, set up dynamic DNS and use that DNS name as the VPN endpoint.
+6. Disable sleep or hibernation if this machine should act as an always-on VPN server.
+7. If the BIOS supports it, enable auto-start after power loss for unattended recovery.
+
+### Install WS4W Expanded
 
 Installers and future release artifacts are published on the [WS4W Expanded releases page](https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases).
 
-After installation, the normal workflow is:
+1. Download the latest `WS4WSetup-*.exe` installer from the releases page.
+2. Right-click the installer and choose `Run as administrator`.
+3. Follow the installer prompts.
+4. Allow the installer to install the required .NET Desktop Runtime if prompted.
+5. Start `Windows WireGuard VPN Server - Expanded`.
+6. If Windows asks for administrator permission, approve it.
 
-1. Install or locate WireGuard.
-2. Configure the server endpoint and MTU.
-3. Configure one or more clients and export their profiles or QR codes.
-4. Install the WireGuard tunnel service.
-5. Confirm the handshake and diagnostics.
-6. Confirm that client internet traffic passes through WinNAT.
+The installer also registers the `WS4WPrivileged` Windows service. That service is used for boot-time recovery of the Windows NAT configuration.
 
-Use `1420` as the normal WireGuard-over-1500-byte starting point. Use `1500` only when the complete path supports it and the resulting tunnel has been tested for packet loss and fragmentation.
+### Install or locate WireGuard
+
+WS4W Expanded needs WireGuard for Windows because WireGuard provides the actual VPN tunnel driver and command-line tools.
+
+1. Open WS4W Expanded.
+2. Find the `WireGuard.exe` requirement.
+3. If WireGuard is missing, use the app's install/download action.
+4. After WireGuard installs, return to WS4W Expanded and refresh the requirement status if needed.
+
+### Configure the server
+
+Use the app's server configuration screen to set the main VPN details:
+
+- `Endpoint`: the public hostname or public IP address clients will use to reach this server.
+- `Listen port`: normally `51820`.
+- `WireGuard network`: a private network used only by VPN clients, such as `10.253.0.0/24`.
+- `Server address`: the server's VPN address inside that network, commonly `10.253.0.1`.
+- `DNS`: the DNS server clients should use while connected. Use a DNS server you trust and can reach through the tunnel.
+- `MTU`: use `1420` first. Try `1500` only after the tunnel works and you can test for packet loss or broken websites.
+
+Plain-language MTU guidance:
+
+- `1420` is the safer default for WireGuard on normal Ethernet/internet paths.
+- `1500` may make fingerprinting look different in some tests, but it can break or slow traffic if any network path cannot carry packets that large after WireGuard overhead.
+- If websites load partially, video calls behave strangely, or large downloads stall after changing MTU, go back to `1420`.
+
+### Add clients
+
+Create one client profile per device. Do not reuse the same client profile on multiple devices at the same time.
+
+1. Add a new client in WS4W Expanded.
+2. Give it a clear name, such as `Pat-phone`, `Pat-laptop`, or `Travel-mini`.
+3. Let the app generate keys and addresses.
+4. Save the configuration.
+5. Export the client configuration or display the QR code.
+6. Import the profile into the WireGuard app on the client device.
+
+For phones, scanning the QR code is usually easiest. For laptops, exporting a `.conf` file and importing it into WireGuard is usually easiest.
+
+### Start the VPN server
+
+After the server and at least one client are configured:
+
+1. Install the WireGuard tunnel service from inside WS4W Expanded.
+2. Enable Windows NAT from inside WS4W Expanded.
+3. Confirm the diagnostics dashboard shows the server as running.
+4. Connect one client from outside the server's local network.
+5. Confirm the dashboard shows a recent handshake.
+6. Confirm bytes sent and received increase while the client browses the web.
+
+The preferred outside test is a phone on cellular data with Wi-Fi turned off. Testing from the same LAN can be misleading because some routers do not support loopback to their own public address.
+
+### Confirm it is working
+
+On the client device:
+
+1. Connect the WireGuard profile.
+2. Visit a site that shows your public IP address.
+3. Confirm the public IP matches the server's internet connection, not the client's original network.
+4. Browse a few normal websites.
+5. Run a speed test if performance matters.
+6. Disconnect WireGuard and confirm normal client internet access returns.
+
+In WS4W Expanded:
+
+- `Server running/stopped` should show running.
+- `Last client handshake` should update after the client connects.
+- `Bytes sent/received` should increase while the client uses the internet.
+- `MTU currently applied` should match the configured MTU.
+- `Internet sharing status` should show the Windows NAT path is enabled.
+- DNS and IPv4 checks should be healthy.
+
+### Reboot test
+
+Do this once before relying on the server remotely:
+
+1. Leave the tunnel and Windows NAT enabled.
+2. Reboot the Windows server.
+3. Open WS4W Expanded after Windows starts.
+4. Confirm the server is running.
+5. Confirm Windows NAT recovered.
+6. Connect a client from outside the LAN.
+7. Confirm handshake, DNS, and internet access still work.
+
+If NAT does not recover after reboot, check the `WS4WPrivileged` service in Windows Services and review the app diagnostics.
+
+### Common setup problems
+
+- No handshake: check the public endpoint, router port forward, Windows Firewall, and whether the client is testing from outside the LAN.
+- Handshake works but no internet: check Windows NAT status, server internet access, DNS settings, and the selected WireGuard subnet.
+- Some sites load but others fail: try MTU `1420`.
+- Client has DNS issues: use an explicit DNS server in the client profile and confirm that server is reachable through the tunnel.
+- VPN works until reboot: check that the `WS4WPrivileged` service is installed and set to delayed automatic start.
+- Server IP changed on the LAN: update the router port forward or create a DHCP reservation.
+
+### Updating
+
+1. Download the newer installer from the releases page.
+2. Save or export any important client profiles before upgrading.
+3. Run the installer as administrator.
+4. Open WS4W Expanded.
+5. Confirm the tunnel, NAT, firewall, DNS, and client handshake checks are still healthy.
+
+### Uninstalling
+
+Before uninstalling, disconnect clients and remove the tunnel from inside WS4W Expanded if possible. Then uninstall from Windows `Installed apps`.
+
+After uninstalling, check WireGuard for Windows if you want to remove the WireGuard client application itself. WS4W Expanded and WireGuard for Windows are separate applications.
 
 ## Diagnostics and safety
 
