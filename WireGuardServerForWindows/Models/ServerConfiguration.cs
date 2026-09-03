@@ -12,6 +12,8 @@ namespace WireGuardServerForWindows.Models
 {
     public class ServerConfiguration : ConfigurationBase
     {
+        private static readonly string[] BooleanOptions = { bool.TrueString, bool.FalseString };
+
         #region Constructor
 
         public ServerConfiguration()
@@ -29,8 +31,10 @@ namespace WireGuardServerForWindows.Models
             EndpointProperty.TargetTypes.Add(typeof(ClientConfiguration));
 
             // Set some properties that are unique to server
+            NameProperty.DefaultValue = $"{Environment.MachineName} Wireguard Server";
             AddressProperty.DefaultValue = "10.253.0.0/24";
             AddressProperty.Index = 3;
+            AddressProperty.Description = "The private network used inside the VPN. Keep this different from your home or office network. The default works for most people.";
 
             // Do custom validation on the Address (we want a CIDR notation)
             AddressProperty.Validation = new ConfigurationPropertyValidation
@@ -75,49 +79,7 @@ namespace WireGuardServerForWindows.Models
             {
                 Name = $"{nameof(EndpointProperty)}{nameof(ConfigurationProperty.Action)}",
                 Description = Resources.EndpointPropertyActionDescription,
-                Action = async (conf, prop) =>
-                {
-                    // Immediately disable the action so the user can't invoke it again.
-                    EndpointProperty.Action.DependencySatisfiedFunc = _ => false;
-
-                    string ip = null;
-
-                    Mouse.OverrideCursor = Cursors.Wait;
-
-                    try
-                    {
-                        var httpClient = new HttpClient();
-                        ip = await httpClient.GetStringAsync("https://api.ipify.org");
-                    }
-                    catch
-                    {
-                        // Swallow
-                    }
-
-                    if (string.IsNullOrEmpty(ip))
-                    {
-                        // Failed. Indicate such to the user for a period of time.
-                        EndpointProperty.Action.Name = nameof(Resources.FailedToIdentify);
-                    }
-                    else
-                    {
-                        // We got it! Update the value and tell the user.
-                        EndpointProperty.Host = ip;
-                        EndpointProperty.Action.Name = nameof(Resources.Updated);
-                    }
-
-                    Mouse.OverrideCursor = null;
-
-                    // Wait a short time so the user can see the status message
-                    await Task.Delay(TimeSpan.FromSeconds(5));
-
-                    // Reset the state of the action
-                    EndpointProperty.Action.Name = $"{nameof(EndpointProperty)}{nameof(ConfigurationProperty.Action)}";
-                    EndpointProperty.Action.Description = Resources.EndpointPropertyActionDescription;
-
-                    // Lastly, re-enable the action.
-                    EndpointProperty.Action.DependencySatisfiedFunc = null;
-                }
+                Action = async (conf, prop) => await DetectPublicIpAddressAsync(force: true, showStatusDelay: true)
             };
 
             ListenPortProperty.PropertyChanged += (_, args) =>
@@ -137,6 +99,7 @@ namespace WireGuardServerForWindows.Models
         {
             Index = 1,
             PersistentPropertyName = "ListenPort", Name = nameof(ListenPortProperty), DefaultValue = "51820",
+            Description = "The UDP port this server listens on. Keep 51820 unless you also change your router port forward and re-export client profiles.",
             Validation = new ConfigurationPropertyValidation
             {
                 Validate = obj =>
@@ -165,7 +128,7 @@ namespace WireGuardServerForWindows.Models
         {
             Index = 2,
             PersistentPropertyName = "AllowedIPs",
-            Name = nameof(AllowedIpsProperty), Description = Resources.ServerAllowedIpsDescription,
+            Name = nameof(AllowedIpsProperty), Description = "What client traffic should go through this VPN. Use 0.0.0.0/0 to send all IPv4 internet traffic through the server.",
             DefaultValue = "0.0.0.0/0",
             Validation = new ConfigurationPropertyValidation
             {
@@ -198,7 +161,7 @@ namespace WireGuardServerForWindows.Models
             Index = 4,
             PersistentPropertyName = "MTU",
             Name = nameof(MtuProperty),
-            Description = Resources.MtuDescription,
+            Description = "The packet size used by the VPN. 1420 is safest. Try 1500 only after the VPN works and you can test websites, downloads, and video calls.",
             DefaultValue = "1420",
             Validation = new ConfigurationPropertyValidation
             {
@@ -220,8 +183,9 @@ namespace WireGuardServerForWindows.Models
             Index = 5,
             PersistentPropertyName = "KillSwitch",
             Name = nameof(KillSwitchProperty),
-            Description = "Block traffic sourced from the WireGuard subnet when the server tunnel path is unavailable.",
+            Description = "When True, block VPN-client traffic if the protected tunnel path is not available. Leave False while first setting up if you want fewer moving parts.",
             DefaultValue = bool.FalseString,
+            Options = BooleanOptions,
             Validation = BooleanPropertyValidation
         };
         private ConfigurationProperty _killSwitchProperty;
@@ -231,8 +195,9 @@ namespace WireGuardServerForWindows.Models
             Index = 6,
             PersistentPropertyName = "DnsLeakProtection",
             Name = nameof(DnsLeakProtectionProperty),
-            Description = "Require generated client profiles to contain explicit DNS servers.",
+            Description = "When True, generated client profiles must include DNS servers so clients do not silently use their local network DNS.",
             DefaultValue = bool.TrueString,
+            Options = BooleanOptions,
             Validation = BooleanPropertyValidation
         };
         private ConfigurationProperty _dnsLeakProtectionProperty;
@@ -242,8 +207,9 @@ namespace WireGuardServerForWindows.Models
             Index = 7,
             PersistentPropertyName = "DisableIPv6",
             Name = nameof(DisableIpv6Property),
-            Description = "Explicitly disable IPv6 forwarding for this IPv4-only server.",
+            Description = "When True, IPv6 is blocked for VPN clients because this server currently routes IPv4 only. Leave True unless IPv6 support is added and tested.",
             DefaultValue = bool.TrueString,
+            Options = BooleanOptions,
             Validation = BooleanPropertyValidation
         };
         private ConfigurationProperty _disableIpv6Property;
@@ -260,6 +226,7 @@ namespace WireGuardServerForWindows.Models
             Index = 3,
             PersistentPropertyName = "Endpoint",
             Name = nameof(EndpointProperty),
+            Description = "The public address clients use to reach this server. Use a dynamic DNS name if your home public IP changes.",
             DefaultValue = $":{ListenPortProperty.Value}",
             Validation = new ConfigurationPropertyValidation
             {
@@ -298,6 +265,7 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "PersistentKeepalive", // Don't really need this since it isn't saved from here
             Name = nameof(PersistentKeepaliveProperty),
+            Description = "How often clients send a small keep-alive packet when idle. Use 0 to turn it off. Use 25 if clients are behind strict routers or cellular networks.",
             DefaultValue = 0.ToString(),
             Validation = new ConfigurationPropertyValidation
             {
@@ -339,6 +307,99 @@ namespace WireGuardServerForWindows.Models
 
                 return result;
             }
+        }
+
+        public async Task DetectPublicIpAddressAsync(bool force, bool showStatusDelay)
+        {
+            if (!force && ShouldKeepExistingEndpointHost())
+            {
+                return;
+            }
+
+            EndpointProperty.Action.DependencySatisfiedFunc = _ => false;
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            try
+            {
+                using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                string ip = (await httpClient.GetStringAsync("https://api.ipify.org")).Trim();
+
+                if (IPAddress.TryParse(ip, out _))
+                {
+                    EndpointProperty.Host = ip;
+                    EndpointProperty.Action.Name = nameof(Resources.Updated);
+                }
+                else
+                {
+                    EndpointProperty.Action.Name = nameof(Resources.FailedToIdentify);
+                }
+            }
+            catch
+            {
+                EndpointProperty.Action.Name = nameof(Resources.FailedToIdentify);
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+
+                if (showStatusDelay)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                }
+
+                EndpointProperty.Action.Name = $"{nameof(EndpointProperty)}{nameof(ConfigurationProperty.Action)}";
+                EndpointProperty.Action.Description = Resources.EndpointPropertyActionDescription;
+                EndpointProperty.Action.DependencySatisfiedFunc = null;
+            }
+        }
+
+        public bool TryGenerateMissingKeys(out string error)
+        {
+            error = null;
+
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                var wireGuardExe = new WireGuardExe();
+
+                if (string.IsNullOrWhiteSpace(PrivateKeyProperty.Value))
+                {
+                    PrivateKeyProperty.Value = wireGuardExe.ExecuteCommand(new GeneratePrivateKeyCommand());
+                }
+
+                if (string.IsNullOrWhiteSpace(PublicKeyProperty.Value) && string.IsNullOrWhiteSpace(PrivateKeyProperty.Value) == false)
+                {
+                    PublicKeyProperty.Value = wireGuardExe.ExecuteCommand(new GeneratePublicKeyCommand(PrivateKeyProperty.Value));
+                }
+
+                if (string.IsNullOrWhiteSpace(PresharedKeyProperty.Value))
+                {
+                    PresharedKeyProperty.Value = wireGuardExe.ExecuteCommand(new GeneratePresharedKeyCommand());
+                }
+
+                return true;
+            }
+            catch (Exception exception)
+            {
+                error = exception.Message;
+                return false;
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+        }
+
+        private bool ShouldKeepExistingEndpointHost()
+        {
+            string host = EndpointProperty.Host;
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                return false;
+            }
+
+            string normalizedHost = host.Trim('[', ']');
+            return IPAddress.TryParse(normalizedHost, out _) == false;
         }
 
         #endregion

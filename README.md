@@ -10,7 +10,7 @@ This repository is the expanded development line. It keeps the original projectâ
 
 ## Current status
 
-Current application version: **1.7.2**
+Current application version: **1.7.3**
 
 Current operating mode: **Standard VPN**
 
@@ -35,6 +35,7 @@ This project is not currently a transparent relay, HTTP proxy, SOCKS proxy, or t
 - IPv6-disable protection because the current WinNAT path is IPv4-only.
 - Firewall rules scoped to the WireGuard subnet/interface.
 - DPAPI protection for private and preshared keys stored in editable application data files.
+- Plain-language server configuration guidance, automatic public IP detection, automatic missing-key generation, and annotated Desktop backups after saving server settings.
 - CLI support for recreating the WS4W WinNAT configuration after a network-stack or adapter change.
 - GitHub Actions restore, build, and test automation.
 

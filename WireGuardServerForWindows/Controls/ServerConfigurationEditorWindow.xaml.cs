@@ -2,6 +2,8 @@
 using System.Windows;
 using System.Windows.Input;
 
+using WireGuardServerForWindows.Models;
+
 namespace WireGuardServerForWindows.Controls
 {
     /// <summary>
@@ -31,6 +33,17 @@ namespace WireGuardServerForWindows.Controls
         {
             DialogResult = false;
             Close();
+        }
+
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not ServerConfiguration serverConfiguration)
+            {
+                return;
+            }
+
+            serverConfiguration.TryGenerateMissingKeys(out _);
+            await serverConfiguration.DetectPublicIpAddressAsync(force: false, showStatusDelay: false);
         }
 
         #endregion

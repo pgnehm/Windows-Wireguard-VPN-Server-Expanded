@@ -108,6 +108,15 @@ namespace WireGuardServerForWindows.Models
                 // Save to WG
                 SaveWG(serverConfiguration);
 
+                try
+                {
+                    ServerConfigurationBackupWriter.SaveToDesktop(serverConfiguration);
+                }
+                catch (Exception exception)
+                {
+                    WarningMessage = $"The server configuration was saved, but the Desktop backup could not be created: {exception.Message}";
+                }
+
                 // Update clients
                 var clientConfigurationsPrerequisite = new ClientConfigurationsPrerequisite();
                 clientConfigurationsPrerequisite.Update();

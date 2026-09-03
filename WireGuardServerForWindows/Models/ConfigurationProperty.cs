@@ -27,6 +27,10 @@ namespace WireGuardServerForWindows.Models
 
         public string Description { get; set; }
 
+        public IReadOnlyList<string> Options { get; set; } = Array.Empty<string>();
+
+        public bool HasOptions => Options.Count > 0;
+
         public string Value
         {
             get => _value ?? GetValueFunc?.Invoke();

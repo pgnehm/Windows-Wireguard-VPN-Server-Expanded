@@ -115,6 +115,7 @@ namespace WireGuardServerForWindows.Models
             Index = 0,
             PersistentPropertyName = "Name",
             Name = nameof(NameProperty),
+            Description = "A friendly name shown inside this app. It is only for your reference and does not affect the VPN connection.",
             Validation = new EmptyStringValidation(Resources.EmptyClientNameError)
         };
         private ConfigurationProperty _nameProperty;
@@ -123,6 +124,7 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "PrivateKey",
             Name = nameof(PrivateKeyProperty),
+            Description = "The secret identity for this server or client. Generate this for a new setup. Do not share it. Only keep an existing value when restoring a backup or migrating an existing VPN.",
             IsReadOnly = true,
             Action = new ConfigurationPropertyAction(this)
             {
@@ -142,6 +144,7 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "PublicKey",
             Name = nameof(PublicKeyProperty),
+            Description = "The public identity created from the private key. This can be shared with peers. Generate it after the private key, or keep it when restoring an existing configuration.",
             IsReadOnly = true,
             Action = new ConfigurationPropertyAction(this)
             {
@@ -163,6 +166,7 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "PresharedKey",
             Name = nameof(PresharedKeyProperty),
+            Description = "An extra shared secret between the server and clients. Generate this for a new setup. Keep an existing value when old clients already use it or when restoring from backup.",
             IsReadOnly = true,
             // Action is different on Server and Client, so it should be implemented there
             Validation = new EmptyStringValidation(Resources.KeyValidationError)
