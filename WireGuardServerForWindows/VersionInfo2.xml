@@ -2,12 +2,12 @@
 <!-- Things to update: Version, Date, Release Notes -->
 <AppUpdate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/main/WireGuardServerForWindows/AppUpdate.xsd">
-  <Version>1.7.1.0</Version>
-  <ReleaseDate>2026-08-24</ReleaseDate>
+  <Version>1.7.2.0</Version>
+  <ReleaseDate>2026-09-03</ReleaseDate>
   <!-- Default download -->
-  <DownloadLink>https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases/download/v1.7.1/WS4WSetup-1.7.1.exe</DownloadLink>
-  <DownloadFileName>WS4WSetup-1.7.1.exe</DownloadFileName>
+  <DownloadLink>https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases/download/v1.7.2/WireguardServerSetup-1.7.2.exe</DownloadLink>
+  <DownloadFileName>WireguardServerSetup-1.7.2.exe</DownloadFileName>
   <!-- Release notes -->
-  <VersionNotes>Pre-test reliability foundation: upstream route diagnostics, NAT recovery logging, service restart recovery, and networking preflight checks.</VersionNotes>
+  <VersionNotes>Fix startup progress binding, refresh application naming, update the installer icon, and default the desktop shortcut option on.</VersionNotes>
   <ReleaseNotes></ReleaseNotes>
 </AppUpdate>

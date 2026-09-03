@@ -1,6 +1,6 @@
-# Windows WireGuard VPN Server — Expanded
+# Wireguard Server
 
-WS4W Expanded is a Windows application for configuring and operating a WireGuard server on a Windows host.
+Wireguard Server is a Windows application for configuring and operating a WireGuard server on a Windows host.
 
 ## Origins and attribution
 
@@ -10,7 +10,7 @@ This repository is the expanded development line. It keeps the original project�
 
 ## Current status
 
-Current application version: **1.7.1**
+Current application version: **1.7.2**
 
 Current operating mode: **Standard VPN**
 
@@ -34,7 +34,7 @@ This project is not currently a transparent relay, HTTP proxy, SOCKS proxy, or t
 - DNS leak protection through explicit DNS requirements in generated client profiles.
 - IPv6-disable protection because the current WinNAT path is IPv4-only.
 - Firewall rules scoped to the WireGuard subnet/interface.
-- DPAPI protection for private and preshared keys stored in editable WS4W data files.
+- DPAPI protection for private and preshared keys stored in editable application data files.
 - CLI support for recreating the WS4W WinNAT configuration after a network-stack or adapter change.
 - GitHub Actions restore, build, and test automation.
 
@@ -64,7 +64,7 @@ Example: if your home LAN is `192.168.1.x`, do not use `192.168.1.x` for WireGua
 
 ### Recommended server preparation
 
-Before installing WS4W Expanded, prepare the Windows machine:
+Before installing Wireguard Server, prepare the Windows machine:
 
 1. Install Windows updates and reboot.
 2. Give the server a stable LAN address. A router DHCP reservation is usually easier than manually setting a static IP in Windows.
@@ -74,27 +74,27 @@ Before installing WS4W Expanded, prepare the Windows machine:
 6. Disable sleep or hibernation if this machine should act as an always-on VPN server.
 7. If the BIOS supports it, enable auto-start after power loss for unattended recovery.
 
-### Install WS4W Expanded
+### Install Wireguard Server
 
-Installers and future release artifacts are published on the [WS4W Expanded releases page](https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases).
+Installers and future release artifacts are published on the [Wireguard Server releases page](https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases).
 
-1. Download the latest `WS4WSetup-*.exe` installer from the releases page.
+1. Download the latest `WireguardServerSetup-*.exe` installer from the releases page.
 2. Right-click the installer and choose `Run as administrator`.
 3. Follow the installer prompts.
 4. Allow the installer to install the required .NET Desktop Runtime if prompted.
-5. Start `Windows WireGuard VPN Server - Expanded`.
+5. Start `Wireguard Server`.
 6. If Windows asks for administrator permission, approve it.
 
 The installer also registers the `WS4WPrivileged` Windows service. That service is used for boot-time recovery of the Windows NAT configuration.
 
 ### Install or locate WireGuard
 
-WS4W Expanded needs WireGuard for Windows because WireGuard provides the actual VPN tunnel driver and command-line tools.
+Wireguard Server needs WireGuard for Windows because WireGuard provides the actual VPN tunnel driver and command-line tools.
 
-1. Open WS4W Expanded.
+1. Open Wireguard Server.
 2. Find the `WireGuard.exe` requirement.
 3. If WireGuard is missing, use the app's install/download action.
-4. After WireGuard installs, return to WS4W Expanded and refresh the requirement status if needed.
+4. After WireGuard installs, return to Wireguard Server and refresh the requirement status if needed.
 
 ### Configure the server
 
@@ -117,7 +117,7 @@ Plain-language MTU guidance:
 
 Create one client profile per device. Do not reuse the same client profile on multiple devices at the same time.
 
-1. Add a new client in WS4W Expanded.
+1. Add a new client in Wireguard Server.
 2. Give it a clear name, such as `Pat-phone`, `Pat-laptop`, or `Travel-mini`.
 3. Let the app generate keys and addresses.
 4. Save the configuration.
@@ -130,8 +130,8 @@ For phones, scanning the QR code is usually easiest. For laptops, exporting a `.
 
 After the server and at least one client are configured:
 
-1. Install the WireGuard tunnel service from inside WS4W Expanded.
-2. Enable Windows NAT from inside WS4W Expanded.
+1. Install the WireGuard tunnel service from inside Wireguard Server.
+2. Enable Windows NAT from inside Wireguard Server.
 3. Confirm the diagnostics dashboard shows the server as running.
 4. Connect one client from outside the server's local network.
 5. Confirm the dashboard shows a recent handshake.
@@ -150,7 +150,7 @@ On the client device:
 5. Run a speed test if performance matters.
 6. Disconnect WireGuard and confirm normal client internet access returns.
 
-In WS4W Expanded:
+In Wireguard Server:
 
 - `Server running/stopped` should show running.
 - `Last client handshake` should update after the client connects.
@@ -165,7 +165,7 @@ Do this once before relying on the server remotely:
 
 1. Leave the tunnel and Windows NAT enabled.
 2. Reboot the Windows server.
-3. Open WS4W Expanded after Windows starts.
+3. Open Wireguard Server after Windows starts.
 4. Confirm the server is running.
 5. Confirm Windows NAT recovered.
 6. Connect a client from outside the LAN.
@@ -187,14 +187,14 @@ If NAT does not recover after reboot, check the `WS4WPrivileged` service in Wind
 1. Download the newer installer from the releases page.
 2. Save or export any important client profiles before upgrading.
 3. Run the installer as administrator.
-4. Open WS4W Expanded.
+4. Open Wireguard Server.
 5. Confirm the tunnel, NAT, firewall, DNS, and client handshake checks are still healthy.
 
 ### Uninstalling
 
-Before uninstalling, disconnect clients and remove the tunnel from inside WS4W Expanded if possible. Then uninstall from Windows `Installed apps`.
+Before uninstalling, disconnect clients and remove the tunnel from inside Wireguard Server if possible. Then uninstall from Windows `Installed apps`.
 
-After uninstalling, check WireGuard for Windows if you want to remove the WireGuard client application itself. WS4W Expanded and WireGuard for Windows are separate applications.
+After uninstalling, check WireGuard for Windows if you want to remove the WireGuard client application itself. Wireguard Server and WireGuard for Windows are separate applications.
 
 ## Diagnostics and safety
 
@@ -208,9 +208,9 @@ The application reports or manages:
 - DNS, IPv4, IPv6, and internet connectivity.
 - Firewall and kill-switch settings.
 
-WS4W does not disable unrelated adapter-sharing configurations and does not expose a public relay by default. Any future relay feature must include destination restrictions, loop prevention, firewall policy, and service isolation before it is enabled.
+Wireguard Server does not disable unrelated adapter-sharing configurations and does not expose a public relay by default. Any future relay feature must include destination restrictions, loop prevention, firewall policy, and service isolation before it is enabled.
 
-Private and preshared keys in editable WS4W data are protected with the current Windows user’s DPAPI. WireGuard runtime files still contain plaintext keys while the WireGuard service is using them.
+Private and preshared keys in editable application data are protected with the current Windows user’s DPAPI. WireGuard runtime files still contain plaintext keys while the WireGuard service is using them.
 
 ## Development
 

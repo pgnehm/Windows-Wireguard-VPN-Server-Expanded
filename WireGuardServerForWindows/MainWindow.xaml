@@ -8,7 +8,7 @@
         xmlns:local="clr-namespace:WireGuardServerForWindows"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type={x:Type models:MainWindowModel}}"
-        Title="Windows WireGuard VPN Server - Expanded" Height="760" Width="900"
+        Title="Wireguard Server" Height="760" Width="900"
         MinHeight="600" MinWidth="700"
         Icon="/Images/logo.ico"
         Loaded="Window_Loaded">
@@ -32,13 +32,13 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Windows WireGuard VPN Server" Foreground="White" FontSize="26" FontWeight="Bold"/>
-                    <TextBlock Text="Expanded Standard VPN management" Foreground="#FFDCEBFA" FontSize="14" Margin="0,4,0,0"/>
+                    <TextBlock Text="Wireguard Server" Foreground="White" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock Text="Standard VPN management" Foreground="#FFFFE4D8" FontSize="14" Margin="0,4,0,0"/>
                     <TextBlock Text="{Binding StatusTitle}" Foreground="White" FontSize="18" FontWeight="SemiBold" Margin="0,18,0,0"/>
                     <TextBlock Text="{Binding StatusSummary}" Foreground="#FFEAF4FF" TextWrapping="Wrap" Margin="0,3,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Width="180" VerticalAlignment="Center" Margin="24,0,0,0">
-                    <ProgressBar Height="12" Minimum="0" Maximum="{Binding RequiredCount}" Value="{Binding CompletedCount}"/>
+                    <ProgressBar Height="12" Minimum="0" Maximum="{Binding RequiredCount, Mode=OneWay}" Value="{Binding CompletedCount, Mode=OneWay}"/>
                     <TextBlock Text="{Binding CompletedCount, StringFormat={}{0} completed}" Foreground="White" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                 </StackPanel>
             </Grid>

@@ -1,6 +1,6 @@
-# WS4W Expanded Installer
+# Wireguard Server Installer
 
-This installer packages the current Windows WireGuard VPN Server - Expanded build. The project is based on the original WS4W work by Micah Morrison; see the repository [README](../README.md) and [LICENSE](../LICENSE) for attribution.
+This installer packages the current Wireguard Server build. The project is based on the original WireGuard Server for Windows work by Micah Morrison; see the repository [README](../README.md) and [LICENSE](../LICENSE) for attribution.
 
 ## Prerequisite
 

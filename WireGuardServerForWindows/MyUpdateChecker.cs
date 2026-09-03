@@ -47,7 +47,7 @@ namespace WireGuardServerForWindows
 
                 MessageBoxResult result = MessageBox.Show(
                     _owner,
-                    $"WS4W {availableVersion} is available. Open the download page?",
+                    $"Wireguard Server {availableVersion} is available. Open the download page?",
                     "Update available",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Information);

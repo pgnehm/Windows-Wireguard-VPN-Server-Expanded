@@ -126,8 +126,8 @@ namespace WireGuardServerForWindows
         {
             MessageBox.Show(
                 this,
-                $"Windows WireGuard VPN Server - Expanded {GetType().Assembly.GetName().Version}",
-                "About WS4W",
+                $"Wireguard Server {GetType().Assembly.GetName().Version}",
+                "About Wireguard Server",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }

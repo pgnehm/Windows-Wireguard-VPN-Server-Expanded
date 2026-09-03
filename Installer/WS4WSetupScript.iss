@@ -1,5 +1,5 @@
-#define MyAppName "Windows WireGuard VPN Server - Expanded"
-#define MyAppVersion "1.7.1"
+#define MyAppName "Wireguard Server"
+#define MyAppVersion "1.7.2"
 #define MyAppPublisher "Patrick Gnehm"
 #define MyAppURL "https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded"
 #define MyAppExeName "WireGuardServerForWindows.exe"
@@ -21,8 +21,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\WS4W
-DefaultGroupName=WS4W
+DefaultDirName={autopf}\Wireguard Server
+DefaultGroupName=Wireguard Server
 AllowNoIcons=yes
 ; This is relative to the .iss file location
 SourceDir=..\WireGuardServerForWindows\bin\Release\net10.0-windows\
@@ -31,7 +31,7 @@ OutputDir={#RepoRoot}\Installer
 SetupIconFile={#RepoRoot}\WireGuardServerForWindows\Images\logo.ico
 ; This is an install-time path, so it must refer to something on the installed machine, like the main exe
 UninstallDisplayIcon={app}\WireGuardServerForWindows.exe
-OutputBaseFilename=WS4WSetup-{#MyAppVersion}
+OutputBaseFilename=WireguardServerSetup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -39,7 +39,7 @@ WizardStyle=modern
 RestartIfNeededByRun=no
 
 [CustomMessages]
-UCrtError={#MyAppName} requires the Universal C Runtime. Please perform all outstanding Windows Updates or search for and install {#UniversalCrtKb} before installing WS4W.
+UCrtError={#MyAppName} requires the Universal C Runtime. Please perform all outstanding Windows Updates or search for and install {#UniversalCrtKb} before installing Wireguard Server.
 
 [Code]
 function NetCoreRuntimeNotInstalled: Boolean;
@@ -70,7 +70,7 @@ end;
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "setpath"; Description: "Add '{app}' to the PATH variable for CLI access."; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
