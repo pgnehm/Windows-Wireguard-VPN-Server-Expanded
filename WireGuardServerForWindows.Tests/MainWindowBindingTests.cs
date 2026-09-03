@@ -26,6 +26,20 @@ namespace WireGuardServerForWindows.Tests
             progressBar.Attribute("Value")?.Value.Should().Contain("Mode=OneWay");
         }
 
+        [Fact]
+        public void MainWindowShouldExposeGuidedSetupButton()
+        {
+            string xamlPath = Path.Combine(
+                GetRepositoryRoot(),
+                "WireGuardServerForWindows",
+                "MainWindow.xaml");
+
+            XDocument document = XDocument.Load(xamlPath);
+
+            document.ToString().Should().Contain("Guided setup");
+            document.ToString().Should().Contain("GuidedSetupButton_Click");
+        }
+
         private static string GetRepositoryRoot([CallerFilePath] string sourcePath = "")
         {
             return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, ".."));

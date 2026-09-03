@@ -13,9 +13,17 @@ namespace WireGuardServerForWindows.Models
         {
             using (new WaitCursor(dispatcherPriority: DispatcherPriority.Render, restoreCursorToNull: true))
             {
-                List.Add(new ClientConfiguration(this));
+                AddClientWithDefaults();
             }
         });
         private RelayCommand _addClientConfigurationCommand;
+
+        public ClientConfiguration AddClientWithDefaults()
+        {
+            var clientConfiguration = new ClientConfiguration(this);
+            clientConfiguration.InitializeNewClientDefaults();
+            List.Add(clientConfiguration);
+            return clientConfiguration;
+        }
     }
 }

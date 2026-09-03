@@ -2,12 +2,12 @@
 <!-- Things to update: Version, Date, Release Notes -->
 <AppUpdate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/main/WireGuardServerForWindows/AppUpdate.xsd">
-  <Version>1.7.3.0</Version>
+  <Version>1.7.4.0</Version>
   <ReleaseDate>2026-09-03</ReleaseDate>
   <!-- Default download -->
-  <DownloadLink>https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases/download/v1.7.3/WireguardServerSetup-1.7.3.exe</DownloadLink>
-  <DownloadFileName>WireguardServerSetup-1.7.3.exe</DownloadFileName>
+  <DownloadLink>https://github.com/pgnehm/Windows-Wireguard-VPN-Server-Expanded/releases/download/v1.7.4/WireguardServerSetup-1.7.4.exe</DownloadLink>
+  <DownloadFileName>WireguardServerSetup-1.7.4.exe</DownloadFileName>
   <!-- Release notes -->
-  <VersionNotes>Improve server setup usability with plain-language field explanations, automatic public IP detection, automatic missing-key generation, dropdown safety settings, and Desktop configuration backups.</VersionNotes>
+  <VersionNotes>Add a guided setup wizard, plain-language checklist instructions, and smarter client prefill for first-time setup.</VersionNotes>
   <ReleaseNotes></ReleaseNotes>
 </AppUpdate>

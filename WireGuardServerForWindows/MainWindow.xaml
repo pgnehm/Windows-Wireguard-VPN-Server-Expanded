@@ -40,13 +40,14 @@
                 <StackPanel Grid.Column="1" Width="180" VerticalAlignment="Center" Margin="24,0,0,0">
                     <ProgressBar Height="12" Minimum="0" Maximum="{Binding RequiredCount, Mode=OneWay}" Value="{Binding CompletedCount, Mode=OneWay}"/>
                     <TextBlock Text="{Binding CompletedCount, StringFormat={}{0} completed}" Foreground="White" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    <Button Content="Guided setup" Margin="0,14,0,0" Padding="10,6" Click="GuidedSetupButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <StackPanel Grid.Row="1" Margin="22,4,22,4">
             <TextBlock Text="Setup steps" FontSize="22" FontWeight="SemiBold" Foreground="#FF263238"/>
-            <TextBlock Text="Complete these steps once. After that, use the status window to monitor the server." Foreground="#FF54616B" Margin="0,3,0,0"/>
+            <TextBlock Text="Use Guided setup for a step-by-step walkthrough, or use the cards below directly. Each card explains what the step does and shows the button to fix or edit it." Foreground="#FF54616B" Margin="0,3,0,0" TextWrapping="Wrap"/>
         </StackPanel>
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">

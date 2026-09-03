@@ -62,6 +62,13 @@ namespace WireGuardServerForWindows.Models
         }
         private string _warningMessage;
 
+        public string HelpText
+        {
+            get => _helpText;
+            set => Set(nameof(HelpText), ref _helpText, value);
+        }
+        private string _helpText;
+
         public string ResolveText
         {
         get => _resolveText;

@@ -9,6 +9,8 @@ using System.Windows.Threading;
 using GalaSoft.MvvmLight.Command;
 using QRCoder;
 using SharpConfig;
+using WireGuardAPI;
+using WireGuardAPI.Commands;
 using WireGuardServerForWindows.Extensions;
 using WireGuardServerForWindows.Properties;
 using ECCLevel = QRCoder.QRCodeGenerator.ECCLevel;
@@ -23,6 +25,8 @@ namespace WireGuardServerForWindows.Models
         public ClientConfiguration(ClientConfigurationList parentList)
         {
             _parentList = parentList;
+            NameProperty.DefaultValue = $"Client {(parentList?.List.Count ?? 0) + 1}";
+            NameProperty.Description = "A friendly name for this device, such as Pat phone or Travel laptop. Use one client profile per device.";
 
             // Client properties
             PrivateKeyProperty.TargetTypes.Add(GetType());
@@ -97,6 +101,7 @@ namespace WireGuardServerForWindows.Models
                     return result;
                 }
             };
+            AddressProperty.Description = "The client's private VPN address. Use Generate from Server to pick the next available address in the VPN network.";
 
             // The client only copies the PSK from the server
             PresharedKeyProperty.Action = new ConfigurationPropertyAction(this)
@@ -162,6 +167,7 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "DNS",
             Name = nameof(DnsProperty),
+            Description = "DNS servers this client should use while connected. The default uses Google DNS and Cloudflare DNS.",
             DefaultValue = "8.8.8.8, 1.1.1.1",
             Validation = new ConfigurationPropertyValidation
             {
@@ -294,5 +300,39 @@ namespace WireGuardServerForWindows.Models
         private readonly ClientConfigurationList _parentList;
 
         #endregion
+
+        public bool InitializeNewClientDefaults()
+        {
+            try
+            {
+                var wireGuardExe = new WireGuardExe();
+
+                if (string.IsNullOrWhiteSpace(PrivateKeyProperty.Value))
+                {
+                    PrivateKeyProperty.Value = wireGuardExe.ExecuteCommand(new GeneratePrivateKeyCommand());
+                }
+
+                if (string.IsNullOrWhiteSpace(PublicKeyProperty.Value) && string.IsNullOrWhiteSpace(PrivateKeyProperty.Value) == false)
+                {
+                    PublicKeyProperty.Value = wireGuardExe.ExecuteCommand(new GeneratePublicKeyCommand(PrivateKeyProperty.Value));
+                }
+
+                if (string.IsNullOrWhiteSpace(PresharedKeyProperty.Value))
+                {
+                    PresharedKeyProperty.Action?.Action?.Invoke(this, PresharedKeyProperty);
+                }
+
+                if (string.IsNullOrWhiteSpace(AddressProperty.Value))
+                {
+                    AddressProperty.Action?.Action?.Invoke(this, AddressProperty);
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

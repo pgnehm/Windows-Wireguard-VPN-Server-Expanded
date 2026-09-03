@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using SharpConfig;
+using WireGuardServerForWindows.Controls;
 using WireGuardServerForWindows.Models;
 
 namespace WireGuardServerForWindows
@@ -26,6 +27,21 @@ namespace WireGuardServerForWindows
             var privateNetworkPrerequisite = new PrivateNetworkPrerequisite();
             var internetSharingPrerequisite = new InternetSharingPrerequisite();
             var serverStatusPrerequisite = new ServerStatusPrerequisite();
+
+            wireGuardExePrerequisite.HelpText =
+                "WireGuard is the VPN engine. This app manages the setup, but WireGuard provides the secure tunnel driver.";
+            serverConfigurationPrerequisite.HelpText =
+                "Set the server name, public address, listening port, VPN network, MTU, and safety options. The app fills in safe defaults where it can.";
+            clientConfigurationsPrerequisite.HelpText =
+                "Create one profile per phone, laptop, or computer. The app can pre-fill a client name, address, DNS, and keys for a new device.";
+            tunnelServicePrerequisite.HelpText =
+                "This installs the WireGuard tunnel as a Windows background service so the VPN can keep running after setup.";
+            privateNetworkPrerequisite.HelpText =
+                "Windows should treat the VPN adapter as private so normal server-side networking is not blocked unnecessarily.";
+            internetSharingPrerequisite.HelpText =
+                "Windows NAT lets VPN clients use this server's internet connection. If this is off, clients may connect but fail to browse.";
+            serverStatusPrerequisite.HelpText =
+                "Use this after setup to check whether the server is running, clients are handshaking, bytes are moving, and DNS/NAT are healthy.";
 
             // -- Set up interdependencies --
 
@@ -118,6 +134,17 @@ namespace WireGuardServerForWindows
         {
             // Auto allows the user to Skip (updates are still available via F1)
             _updateChecker.CheckForUpdates(UpdateNotifyMode.Auto);
+        }
+
+        private void GuidedSetupButton_Click(object sender, RoutedEventArgs e)
+        {
+            var wizard = new SetupWizardWindow
+            {
+                Owner = this,
+                DataContext = new SetupWizardViewModel((MainWindowModel)DataContext)
+            };
+
+            wizard.ShowDialog();
         }
 
         #endregion

@@ -109,6 +109,11 @@ namespace WireGuardServerForWindows.Models
                 clientConfigurations.List.Add(clientConfiguration);
             }
 
+            if (clientConfigurations.List.Count == 0)
+            {
+                clientConfigurations.AddClientWithDefaults();
+            }
+
             ClientConfigurationEditorWindow clientConfigurationEditorWindow = new ClientConfigurationEditorWindow {DataContext = clientConfigurations};
 
             Mouse.OverrideCursor = Cursors.Wait;
