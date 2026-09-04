@@ -60,6 +60,8 @@ namespace WireGuardServerForWindows.Models
 
         public bool IsHidden { get; set; }
 
+        public bool IsAdvanced { get; set; }
+
         public ConfigurationPropertyAction Action { get; set; }
 
         public ConfigurationPropertyValidation Validation { get; set; }

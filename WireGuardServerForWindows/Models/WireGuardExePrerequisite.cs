@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using WireGuardAPI;
 using WireGuardServerForWindows.Properties;
@@ -31,6 +32,17 @@ namespace WireGuardServerForWindows.Models
 
         public override void Resolve()
         {
+            MessageBoxResult confirmation = MessageBox.Show(
+                "WireGuard is required before this app can create the VPN tunnel.\n\nDownload and start the official WireGuard for Windows installer now?",
+                "Install WireGuard",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
             Mouse.OverrideCursor = Cursors.Wait;
             
             string downloadPath = Path.Combine(Path.GetTempPath(), "wireguard.exe");

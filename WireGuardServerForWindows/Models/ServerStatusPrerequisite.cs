@@ -60,6 +60,7 @@ namespace WireGuardServerForWindows.Models
         public string BytesSent => _wireGuard.BytesSent;
         public string TransferStatus => $"{BytesReceived} / {BytesSent}";
         public string MtuCurrentlyApplied => GetCurrentMtu();
+        public string MtuGuidance => GetMtuGuidance();
         public string InternetSharingStatus => _internetSharingStatus;
         public string DnsStatus => _networkPath.Dns;
         public string Ipv4Status => GetAddressFamilyStatus(System.Net.Sockets.AddressFamily.InterNetwork);
@@ -140,6 +141,7 @@ namespace WireGuardServerForWindows.Models
                 RaisePropertyChanged(nameof(BytesSent));
                 RaisePropertyChanged(nameof(TransferStatus));
                 RaisePropertyChanged(nameof(MtuCurrentlyApplied));
+                RaisePropertyChanged(nameof(MtuGuidance));
                 RaisePropertyChanged(nameof(InternetSharingStatus));
                 RaisePropertyChanged(nameof(DnsStatus));
                 RaisePropertyChanged(nameof(Ipv4Status));
@@ -167,6 +169,23 @@ namespace WireGuardServerForWindows.Models
                 return "Unable to read";
             }
         }
+
+        private string GetMtuGuidance()
+        {
+            string current = MtuCurrentlyApplied;
+            if (current == "1420")
+            {
+                return "1420 is the safest WireGuard default. After the VPN is stable, you can test 1500 to see whether your route supports larger packets; revert to 1420 if websites partially load, downloads stall, or calls break.";
+            }
+
+            if (current == "1500")
+            {
+                return "1500 may look more like a normal Ethernet path, but only keep it if real browsing, downloads, and video calls remain reliable.";
+            }
+
+            return "Start with 1420. Only tune MTU after the tunnel, NAT, DNS, and handshake checks are healthy.";
+        }
+
 
         private string GetInternetSharingStatus()
         {

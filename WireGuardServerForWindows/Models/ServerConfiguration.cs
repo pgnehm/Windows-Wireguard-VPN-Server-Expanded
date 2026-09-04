@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WireGuardAPI;
@@ -34,7 +35,8 @@ namespace WireGuardServerForWindows.Models
             NameProperty.DefaultValue = $"{Environment.MachineName} Wireguard Server";
             AddressProperty.DefaultValue = "10.253.0.0/24";
             AddressProperty.Index = 3;
-            AddressProperty.Description = "The private network used inside the VPN. Keep this different from your home or office network. The default works for most people.";
+            AddressProperty.Description = "Advanced: the private network used inside the VPN. Keep this different from your home or office network. The default works for most people.";
+            AddressProperty.IsAdvanced = true;
 
             // Do custom validation on the Address (we want a CIDR notation)
             AddressProperty.Validation = new ConfigurationPropertyValidation
@@ -99,7 +101,7 @@ namespace WireGuardServerForWindows.Models
         {
             Index = 1,
             PersistentPropertyName = "ListenPort", Name = nameof(ListenPortProperty), DefaultValue = "51820",
-            Description = "The UDP port this server listens on. Keep 51820 unless you also change your router port forward and re-export client profiles.",
+            Description = "The UDP port this Windows server listens on. Keep 51820 unless you also update the Endpoint port, router port forwarding, firewall rules, and exported client profiles.",
             Validation = new ConfigurationPropertyValidation
             {
                 Validate = obj =>
@@ -128,8 +130,9 @@ namespace WireGuardServerForWindows.Models
         {
             Index = 2,
             PersistentPropertyName = "AllowedIPs",
-            Name = nameof(AllowedIpsProperty), Description = "What client traffic should go through this VPN. Use 0.0.0.0/0 to send all IPv4 internet traffic through the server.",
+            Name = nameof(AllowedIpsProperty), Description = "Advanced: what client traffic should go through this VPN. Use 0.0.0.0/0 to send all IPv4 internet traffic through the server. Use narrower ranges only for split-tunnel setups.",
             DefaultValue = "0.0.0.0/0",
+            IsAdvanced = true,
             Validation = new ConfigurationPropertyValidation
             {
                 Validate = obj =>
@@ -161,8 +164,9 @@ namespace WireGuardServerForWindows.Models
             Index = 4,
             PersistentPropertyName = "MTU",
             Name = nameof(MtuProperty),
-            Description = "The packet size used by the VPN. 1420 is safest. Try 1500 only after the VPN works and you can test websites, downloads, and video calls.",
+            Description = "Advanced: MTU is the largest packet size the VPN uses. 1420 is safest because WireGuard adds overhead. Try 1500 only after the VPN works and you can test websites, downloads, and video calls.",
             DefaultValue = "1420",
+            IsAdvanced = true,
             Validation = new ConfigurationPropertyValidation
             {
                 Validate = obj =>
@@ -183,9 +187,10 @@ namespace WireGuardServerForWindows.Models
             Index = 5,
             PersistentPropertyName = "KillSwitch",
             Name = nameof(KillSwitchProperty),
-            Description = "When True, block VPN-client traffic if the protected tunnel path is not available. Leave False while first setting up if you want fewer moving parts.",
+            Description = "Advanced: when True, block VPN-client traffic if the protected tunnel path is not available. Leave False while first setting up if you want fewer moving parts.",
             DefaultValue = bool.FalseString,
             Options = BooleanOptions,
+            IsAdvanced = true,
             Validation = BooleanPropertyValidation
         };
         private ConfigurationProperty _killSwitchProperty;
@@ -195,9 +200,10 @@ namespace WireGuardServerForWindows.Models
             Index = 6,
             PersistentPropertyName = "DnsLeakProtection",
             Name = nameof(DnsLeakProtectionProperty),
-            Description = "When True, generated client profiles must include DNS servers so clients do not silently use their local network DNS.",
+            Description = "Advanced: when True, generated client profiles must include DNS servers so clients do not silently use their local network DNS.",
             DefaultValue = bool.TrueString,
             Options = BooleanOptions,
+            IsAdvanced = true,
             Validation = BooleanPropertyValidation
         };
         private ConfigurationProperty _dnsLeakProtectionProperty;
@@ -207,9 +213,10 @@ namespace WireGuardServerForWindows.Models
             Index = 7,
             PersistentPropertyName = "DisableIPv6",
             Name = nameof(DisableIpv6Property),
-            Description = "When True, IPv6 is blocked for VPN clients because this server currently routes IPv4 only. Leave True unless IPv6 support is added and tested.",
+            Description = "Advanced: when True, IPv6 is blocked for VPN clients because this server currently routes IPv4 only. Leave True unless IPv6 support is added and tested.",
             DefaultValue = bool.TrueString,
             Options = BooleanOptions,
+            IsAdvanced = true,
             Validation = BooleanPropertyValidation
         };
         private ConfigurationProperty _disableIpv6Property;
@@ -226,7 +233,7 @@ namespace WireGuardServerForWindows.Models
             Index = 3,
             PersistentPropertyName = "Endpoint",
             Name = nameof(EndpointProperty),
-            Description = "The public address clients use to reach this server. Use a dynamic DNS name if your home public IP changes.",
+            Description = "The public address clients use to reach this server. Format: public-ip:port or dns-name:port, for example 70.226.22.201:51820 or vpn.example.com:51820. If this PC is behind a router, forward this UDP port to the PC.",
             DefaultValue = $":{ListenPortProperty.Value}",
             Validation = new ConfigurationPropertyValidation
             {
@@ -265,8 +272,9 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "PersistentKeepalive", // Don't really need this since it isn't saved from here
             Name = nameof(PersistentKeepaliveProperty),
-            Description = "How often clients send a small keep-alive packet when idle. Use 0 to turn it off. Use 25 if clients are behind strict routers or cellular networks.",
+            Description = "Advanced: how often clients send a small keep-alive packet when idle. Use 0 to turn it off. Use 25 if clients are behind strict routers or cellular networks.",
             DefaultValue = 0.ToString(),
+            IsAdvanced = true,
             Validation = new ConfigurationPropertyValidation
             {
                 Validate = prop =>
@@ -308,6 +316,21 @@ namespace WireGuardServerForWindows.Models
                 return result;
             }
         }
+
+        public ConfigurationPropertyAction PortForwardingHelpAction => _portForwardingHelpAction ??= new ConfigurationPropertyAction(this)
+        {
+            Name = "Port forwarding help",
+            Description = "Open a web search for router port forwarding instructions. Search for your router model plus UDP port forwarding.",
+            Action = (_, __) =>
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "https://www.google.com/search?q=how+to+set+up+UDP+port+forwarding+on+my+router",
+                    UseShellExecute = true
+                });
+            }
+        };
+        private ConfigurationPropertyAction _portForwardingHelpAction;
 
         public async Task DetectPublicIpAddressAsync(bool force, bool showStatusDelay)
         {

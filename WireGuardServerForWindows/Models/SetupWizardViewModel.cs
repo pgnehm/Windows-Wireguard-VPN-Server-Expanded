@@ -94,17 +94,17 @@ namespace WireGuardServerForWindows.Models
             string instructions = title switch
             {
                 "WireGuard.exe" =>
-                    "WireGuard is the VPN engine. This app configures it, but WireGuard itself provides the tunnel driver. If this step is not complete, install WireGuard first.",
+                    "WireGuard is the VPN engine and Windows network driver. This app configures it, but WireGuard creates the actual encrypted tunnel. If it is missing, the button below can download the official WireGuard installer after you confirm.",
                 "Server Configuration" =>
-                    "These are the main settings clients need in order to reach this server. The app now fills in a friendly name, detects the public IP address, generates missing keys, and saves a Desktop backup when you save.",
+                    "These are the settings clients need to reach this server. Endpoint format is host:port, for example 70.226.22.201:51820 or vpn.example.com:51820. If the server is behind a home router, you usually need to forward UDP traffic from the router to this PC. MTU is the largest packet size the VPN uses; 1420 is safest, and 1500 should only be tested after the VPN works.",
                 "Client Configuration(s)" =>
-                    "Create one client profile for each phone, laptop, or computer that will connect. Do not share one profile across several devices. After saving a client, export its file or QR code and import it into the WireGuard app on that device.",
+                    "Create one client profile for each phone, laptop, or computer that will connect. Normally you only enter a device name, save, then export a config file or QR code for that specific device. Address, DNS, and keys are advanced because the app can fill them in.",
                 "Tunnel Service" =>
-                    "This starts WireGuard in the background on the Windows server. After this is installed, the VPN can keep running even when the setup window is closed.",
+                    "A tunnel is the encrypted network path between a client and this server. The tunnel service starts WireGuard in the background using the saved server and client configuration, so it is installed after those settings exist.",
                 "Private Network" =>
-                    "Windows should treat the WireGuard network as private so the local server-side networking rules are not overly restrictive. If this machine is joined to a domain, this step may only show information.",
+                    "Windows treats Public networks as untrusted and blocks more traffic. The WireGuard adapter should usually be Private so server-side VPN/NAT traffic works without loosening the real public internet adapter.",
                 "Windows NAT" =>
-                    "Windows NAT lets connected VPN clients use this server's normal internet connection. Without this, clients may connect to the server but fail to browse the web.",
+                    "NAT means Network Address Translation. It lets several VPN clients share this server's normal internet connection. Without NAT, clients may connect to the tunnel but fail to reach websites.",
                 "Server Status" =>
                     "Use this screen after setup to confirm the server is running, clients are handshaking, traffic is moving, and DNS/NAT checks look healthy.",
                 _ => prerequisite.HelpText
@@ -112,10 +112,10 @@ namespace WireGuardServerForWindows.Models
 
             string actionText = title switch
             {
-                "WireGuard.exe" => "Install or locate WireGuard, then come back to this wizard.",
-                "Server Configuration" => "Review the defaults, confirm the endpoint and port, then save.",
-                "Client Configuration(s)" => "Add a client, save it, then export a config file or QR code for that device.",
-                "Tunnel Service" => "Install the tunnel service after server and client configuration are complete.",
+                "WireGuard.exe" => "Click the button to download and start the official WireGuard installer. After it finishes, return here and this step should turn green.",
+                "Server Configuration" => "Review the defaults, confirm the public endpoint, set up router port forwarding if this PC is behind a router, then save.",
+                "Client Configuration(s)" => "Click Add Client, enter a personal device name, save, then generate a QR code or export a config file for that device.",
+                "Tunnel Service" => "Install this after server and client settings are saved. WireGuard needs those files before Windows can start the background tunnel.",
                 "Private Network" => "Make the WireGuard network private if Windows requires it.",
                 "Windows NAT" => "Enable Windows NAT so VPN clients can reach the internet.",
                 "Server Status" => "Open status and verify handshake, bytes, DNS, NAT, and internet access.",

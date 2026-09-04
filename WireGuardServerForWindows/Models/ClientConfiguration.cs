@@ -20,13 +20,30 @@ namespace WireGuardServerForWindows.Models
 {
     public class ClientConfiguration : ConfigurationBase
     {
+        private static readonly string[] DnsOptions =
+        {
+            "8.8.8.8, 8.8.4.4",
+            "1.1.1.1, 1.0.0.1",
+            "9.9.9.9, 149.112.112.112",
+            "208.67.222.222, 208.67.220.220",
+            "76.76.2.0, 76.76.10.0"
+        };
+
         #region Constructor
 
         public ClientConfiguration(ClientConfigurationList parentList)
         {
             _parentList = parentList;
+            ShowTopLevelActions = false;
             NameProperty.DefaultValue = $"Client {(parentList?.List.Count ?? 0) + 1}";
-            NameProperty.Description = "A friendly name for this device, such as Pat phone or Travel laptop. Use one client profile per device.";
+            NameProperty.Description = "Enter a personal name for this device, such as Pat phone or Travel laptop. Use one client profile per device.";
+            NameProperty.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(NameProperty.Value))
+                {
+                    RaisePropertyChanged(nameof(Name));
+                }
+            };
 
             // Client properties
             PrivateKeyProperty.TargetTypes.Add(GetType());
@@ -38,7 +55,11 @@ namespace WireGuardServerForWindows.Models
             PublicKeyProperty.TargetTypes.Add(typeof(ServerConfiguration));
             ServerPersistentKeepaliveProperty.TargetTypes.Add(typeof(ServerConfiguration));
 
-            var serverConfiguration = new ServerConfiguration().Load<ServerConfiguration>(Configuration.LoadFromFile(ServerConfigurationPrerequisite.ServerDataPath));
+            var serverConfiguration = new ServerConfiguration();
+            if (File.Exists(ServerConfigurationPrerequisite.ServerDataPath))
+            {
+                serverConfiguration.Load<ServerConfiguration>(Configuration.LoadFromFile(ServerConfigurationPrerequisite.ServerDataPath));
+            }
             string serverIp = serverConfiguration.AddressProperty.Value;
 
             // Add support for generating client IP
@@ -60,7 +81,7 @@ namespace WireGuardServerForWindows.Models
 
                     Mouse.OverrideCursor = Cursors.Wait;
 
-                    var existingAddresses = parentList.List.Select(c => c.AddressProperty.Value);
+                    var existingAddresses = parentList?.List.Select(c => c.AddressProperty.Value) ?? Enumerable.Empty<string>();
 
                     // Find the first address that isn't used by another client
                     prop.Value = NetworkAddressUtilities.EnumerateUsableClientAddresses(serverNetwork)
@@ -101,7 +122,8 @@ namespace WireGuardServerForWindows.Models
                     return result;
                 }
             };
-            AddressProperty.Description = "The client's private VPN address. Use Generate from Server to pick the next available address in the VPN network.";
+            AddressProperty.Description = "Advanced: the client's private VPN address. Normally you should not change this. It only needs to be changed if it overlaps with another client or you are migrating an existing setup.";
+            AddressProperty.IsAdvanced = true;
 
             // The client only copies the PSK from the server
             PresharedKeyProperty.Action = new ConfigurationPropertyAction(this)
@@ -167,8 +189,10 @@ namespace WireGuardServerForWindows.Models
         {
             PersistentPropertyName = "DNS",
             Name = nameof(DnsProperty),
-            Description = "DNS servers this client should use while connected. The default uses Google DNS and Cloudflare DNS.",
-            DefaultValue = "8.8.8.8, 1.1.1.1",
+            Description = "Advanced: DNS servers this client should use while connected. The default uses Google's DNS servers. Choose another provider only if you prefer it or your network blocks Google DNS.",
+            DefaultValue = "8.8.8.8, 8.8.4.4",
+            Options = DnsOptions,
+            IsAdvanced = true,
             Validation = new ConfigurationPropertyValidation
             {
                 Validate = obj =>

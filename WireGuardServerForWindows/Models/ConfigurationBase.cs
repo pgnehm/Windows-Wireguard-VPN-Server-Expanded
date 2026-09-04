@@ -126,6 +126,7 @@ namespace WireGuardServerForWindows.Models
             Name = nameof(PrivateKeyProperty),
             Description = "The secret identity for this server or client. Generate this for a new setup. Do not share it. Only keep an existing value when restoring a backup or migrating an existing VPN.",
             IsReadOnly = true,
+            IsAdvanced = true,
             Action = new ConfigurationPropertyAction(this)
             {
                 Name = $"{nameof(PrivateKeyProperty)}{nameof(ConfigurationProperty.Action)}",
@@ -146,6 +147,7 @@ namespace WireGuardServerForWindows.Models
             Name = nameof(PublicKeyProperty),
             Description = "The public identity created from the private key. This can be shared with peers. Generate it after the private key, or keep it when restoring an existing configuration.",
             IsReadOnly = true,
+            IsAdvanced = true,
             Action = new ConfigurationPropertyAction(this)
             {
                 Name = $"{nameof(PublicKeyProperty)}{nameof(ConfigurationProperty.Action)}",
@@ -168,6 +170,7 @@ namespace WireGuardServerForWindows.Models
             Name = nameof(PresharedKeyProperty),
             Description = "An extra shared secret between the server and clients. Generate this for a new setup. Keep an existing value when old clients already use it or when restoring from backup.",
             IsReadOnly = true,
+            IsAdvanced = true,
             // Action is different on Server and Client, so it should be implemented there
             Validation = new EmptyStringValidation(Resources.KeyValidationError)
         };
@@ -185,7 +188,15 @@ namespace WireGuardServerForWindows.Models
 
         public IEnumerable<ConfigurationProperty> UiProperties => Properties.Where(p => p.IsHidden == false);
 
+        public IEnumerable<ConfigurationProperty> BasicUiProperties => UiProperties.Where(p => p.IsAdvanced == false);
+
+        public IEnumerable<ConfigurationProperty> AdvancedUiProperties => UiProperties.Where(p => p.IsAdvanced);
+
+        public bool HasAdvancedUiProperties => AdvancedUiProperties.Any();
+
         public List<ConfigurationPropertyAction> TopLevelActions { get; } = new List<ConfigurationPropertyAction>();
+
+        public bool ShowTopLevelActions { get; protected set; } = true;
 
         #endregion
     }

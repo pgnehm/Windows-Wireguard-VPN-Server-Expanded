@@ -10,7 +10,7 @@ This repository is the expanded development line. It keeps the original projectâ
 
 ## Current status
 
-Current application version: **1.7.4**
+Current application version: **1.7.5**
 
 Current operating mode: **Standard VPN**
 
@@ -35,7 +35,7 @@ This project is not currently a transparent relay, HTTP proxy, SOCKS proxy, or t
 - IPv6-disable protection because the current WinNAT path is IPv4-only.
 - Firewall rules scoped to the WireGuard subnet/interface.
 - DPAPI protection for private and preshared keys stored in editable application data files.
-- Plain-language setup guidance, a guided setup wizard, automatic public IP detection, automatic missing-key generation, smarter new-client defaults, and annotated Desktop backups after saving server settings.
+- Plain-language setup guidance, a guided setup wizard, automatic public IP detection, automatic missing-key generation, smarter new-client defaults, Basic/Advanced configuration sections, a simplified client list/details editor, and annotated Desktop backups after saving server settings.
 - CLI support for recreating the WS4W WinNAT configuration after a network-stack or adapter change.
 - GitHub Actions restore, build, and test automation.
 
@@ -94,19 +94,27 @@ Wireguard Server needs WireGuard for Windows because WireGuard provides the actu
 
 1. Open Wireguard Server.
 2. Find the `WireGuard.exe` requirement.
-3. If WireGuard is missing, use the app's install/download action.
+3. If WireGuard is missing, use the app's install/download action. The app asks for confirmation before downloading and starting the official WireGuard installer.
 4. After WireGuard installs, return to Wireguard Server and refresh the requirement status if needed.
 
 ### Configure the server
 
-Use the app's server configuration screen to set the main VPN details:
+Use the app's server configuration screen to set the main VPN details. Most users only need the basic fields first:
 
 - `Endpoint`: the public hostname or public IP address clients will use to reach this server.
 - `Listen port`: normally `51820`.
+
+Endpoint format is `host:port`, such as `70.226.22.201:51820` or `vpn.example.com:51820`.
+
+`Listen port` is the local UDP port on the Windows server. The port part of `Endpoint` is the port clients contact from outside. In a simple home setup they should match. If the server is behind a router, forward UDP port `51820` from the router to the Windows server's LAN IP address.
+
+Advanced fields include:
+
 - `WireGuard network`: a private network used only by VPN clients, such as `10.253.0.0/24`.
-- `Server address`: the server's VPN address inside that network, commonly `10.253.0.1`.
+- `Allowed IPs`: controls which client traffic uses the VPN. `0.0.0.0/0` means all IPv4 internet traffic uses the VPN. Narrower ranges are for split-tunnel setups.
 - `DNS`: the DNS server clients should use while connected. Use a DNS server you trust and can reach through the tunnel.
 - `MTU`: use `1420` first. Try `1500` only after the tunnel works and you can test for packet loss or broken websites.
+- Keys and security switches: leave these generated/default unless restoring a backup or intentionally changing security behavior.
 
 Plain-language MTU guidance:
 
@@ -118,12 +126,13 @@ Plain-language MTU guidance:
 
 Create one client profile per device. Do not reuse the same client profile on multiple devices at the same time.
 
-1. Add a new client in Wireguard Server.
-2. Give it a clear name, such as `Pat-phone`, `Pat-laptop`, or `Travel-mini`.
-3. Let the app generate keys and addresses.
-4. Save the configuration.
-5. Export the client configuration or display the QR code.
-6. Import the profile into the WireGuard app on the client device.
+1. Open client configuration.
+2. If the list is empty, click `Add Client`.
+3. Give the client a clear device name, such as `Pat-phone`, `Pat-laptop`, or `Travel-mini`.
+4. Leave Advanced settings alone unless you are restoring or troubleshooting. The app fills in address, DNS, and keys.
+5. Save the configuration.
+6. Select the client in the list, then export the client configuration or display the QR code.
+7. Import the profile into the WireGuard app on the client device.
 
 For phones, scanning the QR code is usually easiest. For laptops, exporting a `.conf` file and importing it into WireGuard is usually easiest.
 

@@ -29,17 +29,17 @@ namespace WireGuardServerForWindows
             var serverStatusPrerequisite = new ServerStatusPrerequisite();
 
             wireGuardExePrerequisite.HelpText =
-                "WireGuard is the VPN engine. This app manages the setup, but WireGuard provides the secure tunnel driver.";
+                "WireGuard is the VPN engine. This app manages it, but WireGuard provides the secure encrypted tunnel that client devices connect through.";
             serverConfigurationPrerequisite.HelpText =
-                "Set the server name, public address, listening port, VPN network, MTU, and safety options. The app fills in safe defaults where it can.";
+                "Set the server name and public address clients will use. The app fills in safe defaults, including port, VPN network, MTU, and keys.";
             clientConfigurationsPrerequisite.HelpText =
-                "Create one profile per phone, laptop, or computer. The app can pre-fill a client name, address, DNS, and keys for a new device.";
+                "Create one profile per phone, laptop, or computer. Start with a device name; the app fills in address, DNS, and keys.";
             tunnelServicePrerequisite.HelpText =
-                "This installs the WireGuard tunnel as a Windows background service so the VPN can keep running after setup.";
+                "The tunnel is the encrypted VPN connection. Installing the tunnel service tells Windows to run WireGuard in the background using the server and client settings you saved.";
             privateNetworkPrerequisite.HelpText =
-                "Windows should treat the VPN adapter as private so normal server-side networking is not blocked unnecessarily.";
+                "Windows applies stricter firewall rules to Public networks. Marking the VPN network Private lets the server-side VPN/NAT traffic work without opening unrelated public access.";
             internetSharingPrerequisite.HelpText =
-                "Windows NAT lets VPN clients use this server's internet connection. If this is off, clients may connect but fail to browse.";
+                "NAT means Network Address Translation. It lets VPN clients share this server's normal internet connection. Without NAT, a client may connect to the VPN but still fail to browse websites.";
             serverStatusPrerequisite.HelpText =
                 "Use this after setup to check whether the server is running, clients are handshaking, bytes are moving, and DNS/NAT are healthy.";
 

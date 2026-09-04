@@ -13,10 +13,110 @@
     <Grid.Resources>
         <converters:ResourceStringConverter x:Key="ResourceStringConverter"/>
         <converters:MultiValueStringFormatConverter x:Key="MultiValueStringFormatConverter"/>
+
+        <DataTemplate x:Key="ConfigurationPropertyEditorTemplate">
+            <Grid Margin="10,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="130"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" TextWrapping="Wrap"
+                           Text="{Binding Name, Converter={StaticResource ResourceStringConverter}, StringFormat={x:Static properties:Resources.PropertyNameFormat}}"
+                           ToolTip="{Binding Name, Converter={StaticResource ResourceStringConverter}}"
+                           VerticalAlignment="Top"
+                           Margin="0,3,12,0"/>
+                <TextBox x:Name="tb" Grid.Row="0" Grid.Column="1" IsReadOnly="{Binding IsReadOnly}"
+                         Text="{Binding Value, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTipService.ShowDuration="60000"
+                         VerticalContentAlignment="Center">
+                    <TextBox.Style>
+                        <Style TargetType="{x:Type TextBox}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasOptions}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <Trigger Property="Validation.HasError" Value="True">
+                                    <Setter Property="ToolTip">
+                                        <Setter.Value>
+                                            <MultiBinding Converter="{StaticResource MultiValueStringFormatConverter}"
+                                                          ConverterParameter="{x:Static properties:Resources.ValidationErrorFormat}">
+                                                <Binding Path="Description"/>
+                                                <Binding Path="Value"/>
+                                                <Binding>
+                                                    <Binding.RelativeSource>
+                                                        <RelativeSource Mode="Self"/>
+                                                    </Binding.RelativeSource>
+                                                    <Binding.Path>
+                                                        (Validation.Errors)/ErrorContent
+                                                    </Binding.Path>
+                                                </Binding>
+                                            </MultiBinding>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="Validation.HasError" Value="False">
+                                    <Setter Property="ToolTip">
+                                        <Setter.Value>
+                                            <MultiBinding Converter="{StaticResource MultiValueStringFormatConverter}"
+                                                          ConverterParameter="{x:Static properties:Resources.PropertyFormat}">
+                                                <Binding Path="Description"/>
+                                                <Binding Path="Value"/>
+                                            </MultiBinding>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+
+                <ComboBox Grid.Row="0" Grid.Column="1"
+                          ItemsSource="{Binding Options}"
+                          SelectedItem="{Binding Value, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
+                          VerticalContentAlignment="Center">
+                    <ComboBox.Style>
+                        <Style TargetType="{x:Type ComboBox}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasOptions}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+
+                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                           Text="{Binding Description}"
+                           TextWrapping="Wrap"
+                           Foreground="#FF54616B"
+                           FontSize="12"
+                           Margin="0,4,0,0"/>
+
+                <Button Grid.Row="0" Grid.Column="2" Margin="10,0,0,0" Command="{Binding ExecuteActionCommand}"
+                        Visibility="{c:Binding 'Action != null', FalseToVisibility=Collapsed}"
+                        ToolTipService.ShowDuration="60000"
+                        ToolTip="{Binding Action.Description}"
+                        IsEnabled="{Binding Action.DependencySatisfied}">
+                    <Button.Content>
+                        <TextBlock Text="{Binding Action.Name, Converter={StaticResource ResourceStringConverter}}"
+                                   TextWrapping="Wrap" TextAlignment="Center"/>
+                    </Button.Content>
+                </Button>
+            </Grid>
+        </DataTemplate>
     </Grid.Resources>
 
     <StackPanel Orientation="Vertical">
-        <ItemsControl ItemsSource="{Binding TopLevelActions}">
+        <ItemsControl ItemsSource="{Binding TopLevelActions}"
+                      Visibility="{c:Binding ShowTopLevelActions, FalseToVisibility=Collapsed}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel HorizontalAlignment="Center" Orientation="Horizontal"/>
@@ -37,119 +137,17 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <ItemsControl ItemsSource="{Binding UiProperties}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="10,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="170"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="130"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+        <ItemsControl ItemsSource="{Binding BasicUiProperties}"
+                      ItemTemplate="{StaticResource ConfigurationPropertyEditorTemplate}"/>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" TextWrapping="Wrap"
-                                       Text="{Binding Name, Converter={StaticResource ResourceStringConverter}, StringFormat={x:Static properties:Resources.PropertyNameFormat}}"
-                                       ToolTip="{Binding Name, Converter={StaticResource ResourceStringConverter}}"
-                                       VerticalAlignment="Top"
-                                       Margin="0,3,12,0"/>
-                        <TextBox x:Name="tb" Grid.Row="0" Grid.Column="1" IsReadOnly="{Binding IsReadOnly}"
-                                     Text="{Binding Value, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
-                                     ToolTipService.ShowDuration="60000"
-                                     VerticalContentAlignment="Center">
-                            <TextBox.Style>
-                                <Style TargetType="{x:Type TextBox}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasOptions}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                        <Trigger Property="Validation.HasError" Value="True">
-                                            <Setter Property="ToolTip">
-                                                <Setter.Value>
-                                                    <!-- 
-                                                        Have to use a multivalue converter instead of a StringFormat
-                                                        Because the target of the multibinding is a ToolTip, which expects an object, not a string
-                                                        (We could set the ToolTip Content to be a TextBox and then bind in the TextBox's Text property
-                                                        but then we'd lose access to the trigger, which is in the parent ToolTip's parent.)
-                                                    -->
-                                                    <MultiBinding Converter="{StaticResource MultiValueStringFormatConverter}"
-                                                                      ConverterParameter="{x:Static properties:Resources.ValidationErrorFormat}">
-                                                        <Binding Path="Description"/>
-                                                        <Binding Path="Value"/>
-
-                                                        <!--
-                                                            For some reason this doesn't work as a single line, like:
-                                                             <Binding RelativeSource="{RelativeSource Mode=Self}" Path="(Validation.Errors)/ErrorContent}"/>
-                                                            But it works fine as is below, with each property set separately!
-                                                        -->
-                                                        <Binding>
-                                                            <Binding.RelativeSource>
-                                                                <RelativeSource Mode="Self"/>
-                                                            </Binding.RelativeSource>
-                                                            <Binding.Path>
-                                                                (Validation.Errors)/ErrorContent
-                                                            </Binding.Path>
-                                                        </Binding>
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Trigger>
-                                        <Trigger Property="Validation.HasError" Value="False">
-                                            <Setter Property="ToolTip">
-                                                <Setter.Value>
-                                                    <MultiBinding Converter="{StaticResource MultiValueStringFormatConverter}"
-                                                                  ConverterParameter="{x:Static properties:Resources.PropertyFormat}">
-                                                        <Binding Path="Description"/>
-                                                        <Binding Path="Value"/>
-                                                    </MultiBinding>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
-
-                        <ComboBox Grid.Row="0" Grid.Column="1"
-                                  ItemsSource="{Binding Options}"
-                                  SelectedItem="{Binding Value, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"
-                                  VerticalContentAlignment="Center">
-                            <ComboBox.Style>
-                                <Style TargetType="{x:Type ComboBox}">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasOptions}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ComboBox.Style>
-                        </ComboBox>
-
-                        <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
-                                   Text="{Binding Description}"
-                                   TextWrapping="Wrap"
-                                   Foreground="#FF54616B"
-                                   FontSize="12"
-                                   Margin="0,4,0,0"/>
-
-                        <Button Grid.Row="0" Grid.Column="2" Margin="10,0,0,0" Command="{Binding ExecuteActionCommand}"
-                                    Visibility="{c:Binding 'Action != null', FalseToVisibility=Collapsed}"
-                                    ToolTipService.ShowDuration="60000"
-                                    ToolTip="{Binding Action.Description}"
-                                    IsEnabled="{Binding Action.DependencySatisfied}">
-                            <Button.Content>
-                                <TextBlock Text="{Binding Action.Name, Converter={StaticResource ResourceStringConverter}}"
-                                           TextWrapping="Wrap" TextAlignment="Center"/>
-                            </Button.Content>
-                        </Button>
-                    </Grid>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <Expander Header="Advanced settings" Margin="10,10,10,0"
+                  Visibility="{c:Binding HasAdvancedUiProperties, FalseToVisibility=Collapsed}">
+            <StackPanel>
+                <TextBlock Text="Most users should leave these values alone. Change them only when restoring a backup, matching an existing network, troubleshooting, or intentionally tightening security."
+                           TextWrapping="Wrap" Foreground="#FF54616B" Margin="0,8,0,4"/>
+                <ItemsControl ItemsSource="{Binding AdvancedUiProperties}"
+                              ItemTemplate="{StaticResource ConfigurationPropertyEditorTemplate}"/>
+            </StackPanel>
+        </Expander>
     </StackPanel>
 </Grid>
